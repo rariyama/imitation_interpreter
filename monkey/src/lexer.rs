@@ -1,4 +1,4 @@
-use super::token::{TokenKind};
+use super::token::{Token, TokenKind};
 
 pub struct Lexer {
     input:        String,
@@ -7,15 +7,17 @@ pub struct Lexer {
     ch:           u8, // 現在検査中の文字
 }
 
-impl  Lexer {
+impl Lexer {
     pub fn new(input: String) -> Self {
         let mut l = Lexer{input: input.to_string(),
                       position: 0,
                       readPosition: 0,
-                      ch: 0,};
+                      ch: 0
+                    };
         l.read_char();
         return l
     }
+
     fn read_char(&mut self) {
     if self.readPosition == self.input.len() {
         self.ch = 0;
@@ -25,7 +27,32 @@ impl  Lexer {
     self.position = self.readPosition;
     self.readPosition += 1;
     }
+
+    pub fn new_token(TokenKind: TokenKind, ch: u8)-> Token { //返り値にtoken.Tokenと指定するとダメ...
+        Token{Type: TokenKind,
+              Literal: ch.to_string()
+              }
+    }
+
+    fn next_token(&mut self) -> Token {
+        let tok: Token = match self.ch {
+            b'=' => Lexer::new_token(TokenKind::ASSIGN, Self.ch),
+            b';' => Lexer::new_token(TokenKind::SEMICOLON, Self.ch),
+            b'(' => Lexer::new_token(TokenKind::LPAREN, Self.ch),
+            b')' => Lexer::new_token(TokenKind::RPAREN, Self.ch),
+            b',' => Lexer::new_token(TokenKind::COMMA, Self.ch),
+            b'+' => Lexer::new_token(TokenKind::PLUS, Self.ch),
+            b'{' => Lexer::new_token(TokenKind::LBRACE, Self.ch),
+            b'}' => Lexer::new_token(TokenKind::RBRACE, Self.ch),
+            _   => Token{Type: TokenKind::EOF,
+                               Literal: "".to_string()
+                        }
+        };
+    self.read_char();
+    return tok
+    }
 }
+
 
 
 
@@ -37,7 +64,7 @@ mod testing {
 
     #[test]
     fn test_next_token() {
-        let input = r#"=+(){},;"#;
+        let input = r#"=+(){},;"#.to_string();
 
         struct TokenTest {
             expectedToken: TokenKind,
@@ -55,17 +82,11 @@ mod testing {
                TokenTest {expectedToken: TokenKind::EOF, expectedLiteral: "".to_string()},
                 ];
 
-    let mut l = Lexer::new(input);
-    for (i, test_val) in tests.iter().enumerate() {
-        let next_token = l.next_token();
-
-        if next_token.Type != test_val.expectedToken {
-            eprintln!("{}",test_val.expectedToken)
-        }
-
-        if next_token.Literal != test_val.expectedLiteral {
-            eprintln!("{}",test_val.expectedLiteral)
-            }
+    let mut l = Lexer::new(input.to_string());
+    for test in &tests {
+        let token = l.next_token();
+        assert_eq!(token.Type,  test.expectedToken);
+        assert_eq!(token.Literal,  test.expectedLiteral);
         }
     }
 }

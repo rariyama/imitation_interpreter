@@ -1,4 +1,5 @@
- pub enum TokenKind {
+#[derive(Debug,Eq,PartialEq)]
+pub enum TokenKind {
      ILLEGAL,     // ILLEGAL
      EOF,         // EOF
 
@@ -25,7 +26,8 @@
 }
 
 // if other module refers to Token, pub is needed to write 
- pub struct Token {
-    Type: TokenKind,
-    Literal: String
+#[derive(Debug)]
+pub struct Token {
+    pub Type: TokenKind,
+    pub Literal: String
 }
