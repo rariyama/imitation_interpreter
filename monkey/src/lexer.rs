@@ -1,4 +1,4 @@
-use super::token::{Token, TokenKind};
+use super::token::{Token, TokenKind, get_keyword};
 
 
 pub struct Lexer<'a>  {
@@ -37,7 +37,43 @@ impl<'a>  Lexer<'a>  {
         }
     }
 
+    fn read_identifier(&mut self) -> String {
+        let position = self.position;
+        while Self::is_letter(&self.ch) {
+            self.read_char();
+        }
+        self.input.get(position..self.position).unwrap().to_string()
+//        self.input[..self.position].to_string()
+    }
+
+    fn read_number(&mut self) -> String {
+        let position = self.position;
+        while Self::is_digit(&self.ch) {
+            self.read_char();
+        }
+        self.input.get(position..self.position).unwrap().to_string()
+    }
+
+pub    fn is_letter(ch: &u8) -> bool {
+        let ch = char::from(*ch);
+        'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
+    }
+
+pub    fn is_digit(ch: &u8) -> bool {
+        let ch = char::from(*ch);
+        '0' <= ch && ch <= '9'
+    }
+
+    fn skip_whitespace(&mut self) {
+//        while self.ch == b' ' || self.ch == b'\t' || self.ch == b'\n' || self.ch == b'\r' {
+    while self.ch == b' ' || self.ch == b'\t' || self.ch == b'\n' || self.ch == b'\r' {
+        self.read_char();
+        }
+    }
+
     pub fn next_token(&mut self) -> Token {
+        println!("{}", self.ch.to_string());
+        self.skip_whitespace();
         let token;
         match self.ch {
             b'=' => {
@@ -71,11 +107,25 @@ impl<'a>  Lexer<'a>  {
                 };
             }
             _   => {
-                token = Self::new_token(TokenKind::ILLEGAL, self.ch);
-            }
-        }
+                    if Self::is_letter(&self.ch) {
+                        let ident = self.read_identifier();
+                        let ident_token = get_keyword(&ident);
+                            token =  Token {
+                            Type: ident_token,
+                            Literal: ident
+                     }
+                    } else if Self::is_digit(&self.ch) {
+//                        let read_num = self.read_number();
+                        token =  Token {
+                            Type: TokenKind::INT,
+                            Literal: self.read_number()
+                        }
+                    } else {
+                    token = Self::new_token(TokenKind::ILLEGAL, self.ch);
+                           }
+                    }
+                }
         self.read_char();
-        println!("{:?}", token);
         return token;
     }
 }
@@ -90,15 +140,49 @@ mod testing {
 
     #[test]
     fn test_next_token() {
-        let input = "=+(){},;";
+        let input = r#"let five = 5 ;
+let ten = 10 ;
+let add = fn ( x , y ) {
+   x + y ;
+} ;
+let result = add ( five , ten ) ;"#;
+
         let tests = vec![
+               (TokenKind::LET, String::from("let")),
+               (TokenKind::IDENT, String::from("five")),
                (TokenKind::ASSIGN, String::from("=")),
-               (TokenKind::PLUS, String::from("+")),
+               (TokenKind::INT, String::from("5")),
+               (TokenKind::SEMICOLON, String::from(";")),
+               (TokenKind::LET, String::from("let")),
+               (TokenKind::IDENT, String::from("ten")),
+               (TokenKind::ASSIGN, String::from("=")),
+               (TokenKind::INT, String::from("10")),
+               (TokenKind::SEMICOLON, String::from(";")),
+               (TokenKind::LET, String::from("let")),
+               (TokenKind::IDENT, String::from("add")),
+               (TokenKind::ASSIGN, String::from("=")),
+               (TokenKind::FUNCTION, String::from("fn")),
                (TokenKind::LPAREN, String::from("(")),
+               (TokenKind::IDENT, String::from("x")),
+               (TokenKind::COMMA, String::from(",")),
+               (TokenKind::IDENT, String::from("y")),
                (TokenKind::RPAREN, String::from(")")),
                (TokenKind::LBRACE, String::from("{")),
+               (TokenKind::IDENT, String::from("x")),
+               (TokenKind::PLUS, String::from("+")),
+               (TokenKind::IDENT, String::from("y")),
+               (TokenKind::SEMICOLON, String::from(";")),
                (TokenKind::RBRACE, String::from("}")),
+               (TokenKind::SEMICOLON, String::from(";")),
+               (TokenKind::LET, String::from("let")),
+               (TokenKind::IDENT, String::from("result")),
+               (TokenKind::ASSIGN, String::from("=")),
+               (TokenKind::IDENT, String::from("add")),
+               (TokenKind::LPAREN, String::from("(")),
+               (TokenKind::IDENT, String::from("five")),
                (TokenKind::COMMA, String::from(",")),
+               (TokenKind::IDENT, String::from("ten")),
+               (TokenKind::RPAREN, String::from(")")),
                (TokenKind::SEMICOLON, String::from(";")),
                (TokenKind::EOF, String::from("")),
                 ];
@@ -108,6 +192,9 @@ mod testing {
 //    println!("{:?}", lexer.position);
     for test in tests.iter() {
         let _token = lexer.next_token();
+        println!("{:?}", _token);
+        println!("{:?}", test.0);
+        println!("{:?}", test.1);
         assert_eq!(_token.Type,  test.0);
         assert_eq!(_token.Literal, test.1);
         }
