@@ -65,14 +65,16 @@ pub    fn is_digit(ch: &u8) -> bool {
     }
 
     fn skip_whitespace(&mut self) {
-//        while self.ch == b' ' || self.ch == b'\t' || self.ch == b'\n' || self.ch == b'\r' {
+//        while self.ch == b' ' || self.ch == b'\n' {
     while self.ch == b' ' || self.ch == b'\t' || self.ch == b'\n' || self.ch == b'\r' {
         self.read_char();
         }
     }
 
     pub fn next_token(&mut self) -> Token {
-        println!("{}", self.ch.to_string());
+//        println!("{}", self.ch.to_string());
+//        println!("{}", b' ');
+//        println!("char is {}",c);
         self.skip_whitespace();
         let token;
         match self.ch {
@@ -110,16 +112,19 @@ pub    fn is_digit(ch: &u8) -> bool {
                     if Self::is_letter(&self.ch) {
                         let ident = self.read_identifier();
                         let ident_token = get_keyword(&ident);
+//                        println!("{:?}", ident);
+//                        println!("{:?}", ident_token);
                             token =  Token {
                             Type: ident_token,
                             Literal: ident
-                     }
+                     };//ここでreturnしないと文字が一つ読み飛ばされる。
+                     return token
                     } else if Self::is_digit(&self.ch) {
-//                        let read_num = self.read_number();
                         token =  Token {
                             Type: TokenKind::INT,
                             Literal: self.read_number()
-                        }
+                        };
+                        return token
                     } else {
                     token = Self::new_token(TokenKind::ILLEGAL, self.ch);
                            }
@@ -140,13 +145,12 @@ mod testing {
 
     #[test]
     fn test_next_token() {
-        let input = r#"let five = 5 ;
-let ten = 10 ;
-let add = fn ( x , y ) {
-   x + y ;
-} ;
-let result = add ( five , ten ) ;"#;
-
+        let input = r#"let five = 5;
+let ten = 10;
+let add = fn(x, y){
+   x + y;
+};
+let result = add (five, ten);"#;
         let tests = vec![
                (TokenKind::LET, String::from("let")),
                (TokenKind::IDENT, String::from("five")),
@@ -191,10 +195,11 @@ let result = add ( five , ten ) ;"#;
     let mut lexer = Lexer::new(input);
 //    println!("{:?}", lexer.position);
     for test in tests.iter() {
+//        println!("{:?}", test.1);
         let _token = lexer.next_token();
         println!("{:?}", _token);
-        println!("{:?}", test.0);
-        println!("{:?}", test.1);
+//        println!("{:?}", test.0);
+//        println!("{:?}", test.1);
         assert_eq!(_token.Type,  test.0);
         assert_eq!(_token.Literal, test.1);
         }
