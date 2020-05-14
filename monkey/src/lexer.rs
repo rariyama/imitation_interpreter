@@ -81,6 +81,24 @@ pub    fn is_digit(ch: &u8) -> bool {
             b'=' => {
                 token = Self::new_token(TokenKind::ASSIGN, self.ch);
             }
+            b'-' => {
+                token = Self::new_token(TokenKind::MINUS, self.ch);
+            }
+            b'!' => {
+                token = Self::new_token(TokenKind::BANG, self.ch);
+            }
+            b'*' => {
+                token = Self::new_token(TokenKind::ASTERISK, self.ch);
+            }
+            b'/' => {
+                token = Self::new_token(TokenKind::SLASH, self.ch);
+            }
+            b'<' => {
+                token = Self::new_token(TokenKind::LT, self.ch);
+            }
+            b'>' => {
+                token = Self::new_token(TokenKind::GT, self.ch);
+            }
             b';' => {
                 token = Self::new_token(TokenKind::SEMICOLON, self.ch);
             }
@@ -150,7 +168,9 @@ let ten = 10;
 let add = fn(x, y){
    x + y;
 };
-let result = add (five, ten);"#;
+let result = add (five, ten);
+!-/*5;
+5 < 10 > 5;"#;
         let tests = vec![
                (TokenKind::LET, String::from("let")),
                (TokenKind::IDENT, String::from("five")),
@@ -187,6 +207,18 @@ let result = add (five, ten);"#;
                (TokenKind::COMMA, String::from(",")),
                (TokenKind::IDENT, String::from("ten")),
                (TokenKind::RPAREN, String::from(")")),
+               (TokenKind::SEMICOLON, String::from(";")),
+               (TokenKind::BANG, String::from("!")),
+               (TokenKind::MINUS, String::from("-")),
+               (TokenKind::SLASH, String::from("/")),
+               (TokenKind::ASTERISK, String::from("*")),
+               (TokenKind::INT, String::from("5")),
+               (TokenKind::SEMICOLON, String::from(";")),
+               (TokenKind::INT, String::from("5")),
+               (TokenKind::LT, String::from("<")),
+               (TokenKind::INT, String::from("10")),
+               (TokenKind::GT, String::from(">")),
+               (TokenKind::INT, String::from("5")),
                (TokenKind::SEMICOLON, String::from(";")),
                (TokenKind::EOF, String::from("")),
                 ];
