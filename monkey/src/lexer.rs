@@ -88,8 +88,9 @@ pub    fn is_digit(ch: &u8) -> bool {
         match self.ch {
             b'=' => {
                 if self.peek_char() == b'='{
+                    // ここでcurrent_positionを持ったあとでread_char()をすると
+                    // read_positionが一つ進み、2文字分のインデックスとなる。
                     let curent_position = self.position;
-                    let ch = self.ch;
                     self.read_char();
                     token =  Token {//u8は一文字なので直接tokenに入れる。
                         Type: TokenKind::EQ,
