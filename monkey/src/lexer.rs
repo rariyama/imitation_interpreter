@@ -30,6 +30,14 @@ impl<'a>  Lexer<'a>  {
     self.readPosition += 1;
     }
 
+    fn peek_char(&mut self) -> u8 {
+        if self.readPosition >= self.input.len(){
+            return 0
+        } else{
+            return self.input.as_bytes()[self.readPosition]
+        }
+    }
+
     pub fn new_token(Type: TokenKind, ch: u8)-> Token { //返り値にtoken.Tokenと指定するとダメ...
         Token {
               Type,
@@ -79,13 +87,32 @@ pub    fn is_digit(ch: &u8) -> bool {
         let token;
         match self.ch {
             b'=' => {
+                if self.peek_char() == b'='{
+                    let curent_position = self.position;
+                    let ch = self.ch;
+                    self.read_char();
+                    token =  Token {//u8は一文字なので直接tokenに入れる。
+                        Type: TokenKind::EQ,
+                        Literal: String::from(&self.input[curent_position..self.readPosition])
+                        }
+                } else{
                 token = Self::new_token(TokenKind::ASSIGN, self.ch);
+                }
             }
             b'-' => {
                 token = Self::new_token(TokenKind::MINUS, self.ch);
             }
             b'!' => {
+                if self.peek_char() == b'='{
+                    let curent_position = self.position;
+                    self.read_char();
+                    token =  Token {
+                        Type: TokenKind::NOT_EQ,
+                        Literal: String::from(&self.input[curent_position..self.readPosition])
+                        }
+                } else {
                 token = Self::new_token(TokenKind::BANG, self.ch);
+                }
             }
             b'*' => {
                 token = Self::new_token(TokenKind::ASTERISK, self.ch);
@@ -177,6 +204,9 @@ if (5 < 10) {
 }  else {
     return false;
 }
+
+10 == 10;
+10 != 9;
 "#;
         let tests = vec![
                (TokenKind::LET, String::from("let")),
@@ -244,6 +274,14 @@ if (5 < 10) {
                (TokenKind::FALSE, String::from("false")),
                (TokenKind::SEMICOLON, String::from(";")),
                (TokenKind::RBRACE, String::from("}")),
+               (TokenKind::INT, String::from("10")),
+               (TokenKind::EQ, String::from("==")),               
+               (TokenKind::INT, String::from("10")),
+               (TokenKind::SEMICOLON, String::from(";")),
+               (TokenKind::INT, String::from("10")),
+               (TokenKind::NOT_EQ, String::from("!=")),               
+               (TokenKind::INT, String::from("9")),
+               (TokenKind::SEMICOLON, String::from(";")),
                (TokenKind::EOF, String::from("")),
                 ];
 

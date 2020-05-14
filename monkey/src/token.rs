@@ -17,6 +17,8 @@ pub enum TokenKind {
      SLASH,       // /
      LT,          // <
      GT,          // >
+     EQ,          // ==
+     NOT_EQ,      // !=
 
      // delimiter
      COMMA,       // ,
