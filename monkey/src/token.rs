@@ -30,6 +30,11 @@ pub enum TokenKind {
      // keyword
      FUNCTION,    // FUNCTION
      LET,         // LET
+     TRUE,        // true
+     FALSE,       // false
+     IF,          // if
+     ELSE,        // else
+     RETURN,      // return
 }
 
 pub fn get_keyword(ident: &str) -> TokenKind {
@@ -41,6 +46,21 @@ pub fn get_keyword(ident: &str) -> TokenKind {
         }
         "fn" => {
             TokenKind::FUNCTION
+        }
+        "true" => {
+            TokenKind::TRUE
+        }
+        "false" => {
+            TokenKind::FALSE
+        }
+        "if" => {
+            TokenKind::IF
+        }
+        "else" => {
+            TokenKind::ELSE
+        }
+        "return" => {
+            TokenKind::RETURN
         }
         _ => {
             TokenKind::IDENT

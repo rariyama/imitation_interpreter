@@ -170,7 +170,14 @@ let add = fn(x, y){
 };
 let result = add (five, ten);
 !-/*5;
-5 < 10 > 5;"#;
+5 < 10 > 5;
+
+if (5 < 10) {
+    return true;
+}  else {
+    return false;
+}
+"#;
         let tests = vec![
                (TokenKind::LET, String::from("let")),
                (TokenKind::IDENT, String::from("five")),
@@ -220,6 +227,23 @@ let result = add (five, ten);
                (TokenKind::GT, String::from(">")),
                (TokenKind::INT, String::from("5")),
                (TokenKind::SEMICOLON, String::from(";")),
+               (TokenKind::IF, String::from("if")),
+               (TokenKind::LPAREN, String::from("(")),
+               (TokenKind::INT, String::from("5")),
+               (TokenKind::LT, String::from("<")),
+               (TokenKind::INT, String::from("10")),
+               (TokenKind::RPAREN, String::from(")")),
+               (TokenKind::LBRACE, String::from("{")),
+               (TokenKind::RETURN, String::from("return")),
+               (TokenKind::TRUE, String::from("true")),
+               (TokenKind::SEMICOLON, String::from(";")),
+               (TokenKind::RBRACE, String::from("}")),
+               (TokenKind::ELSE, String::from("else")),
+               (TokenKind::LBRACE, String::from("{")),
+               (TokenKind::RETURN, String::from("return")),
+               (TokenKind::FALSE, String::from("false")),
+               (TokenKind::SEMICOLON, String::from(";")),
+               (TokenKind::RBRACE, String::from("}")),
                (TokenKind::EOF, String::from("")),
                 ];
 
