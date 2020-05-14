@@ -19,7 +19,7 @@ pub fn start(stdin: Stdin, stdout: Stdout) {
                     break;
                 }
                 else {
-                    println!("{:?}", token);
+                    println!("Type: {:?} Literal: {:?}", token.Type, token.Literal);
                 }
             }
         }
