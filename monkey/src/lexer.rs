@@ -108,7 +108,7 @@ pub    fn is_digit(ch: &u8) -> bool {
                     let curent_position = self.position;
                     self.read_char();
                     token =  Token {
-                        token_type: TokenKind::NOT_EQ,
+                        token_type: TokenKind::NotEq,
                         literal: String::from(&self.input[curent_position..self.read_position])
                         }
                 } else {
@@ -280,7 +280,7 @@ if (5 < 10) {
                (TokenKind::INT, String::from("10")),
                (TokenKind::SEMICOLON, String::from(";")),
                (TokenKind::INT, String::from("10")),
-               (TokenKind::NOT_EQ, String::from("!=")),               
+               (TokenKind::NotEq, String::from("!=")),               
                (TokenKind::INT, String::from("9")),
                (TokenKind::SEMICOLON, String::from(";")),
                (TokenKind::EOF, String::from("")),

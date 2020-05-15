@@ -18,7 +18,7 @@ pub enum TokenKind {
      LT,          // <
      GT,          // >
      EQ,          // ==
-     NOT_EQ,      // !=
+     NotEq,      // !=
 
      // delimiter
      COMMA,       // ,
