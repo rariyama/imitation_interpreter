@@ -1,10 +1,10 @@
-use std::io::{Stdin, Stdout, Write};
 use crate::{lexer, token};
 use std::io;
 
 const PROMPT: &str = ">> ";
 
-pub fn start(stdin: Stdin, stdout: Stdout) {
+
+pub fn start() {
     loop {
         let mut input = String::new();
         eprint!("{}", PROMPT);
@@ -15,11 +15,11 @@ pub fn start(stdin: Stdin, stdout: Stdout) {
             let mut lexer = lexer::Lexer::new(&input);
             loop {
                 let token = lexer.next_token();
-                if token.Type == token::TokenKind::EOF {
+                if token.token_type == token::TokenKind::EOF {
                     break;
                 }
                 else {
-                    println!("Type: {:?} Literal: {:?}", token.Type, token.Literal);
+                    println!("Type: {:?} Literal: {:?}", token.token_type, token.literal);
                 }
             }
         }

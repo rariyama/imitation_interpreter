@@ -4,7 +4,7 @@ use super::token::{Token, TokenKind, get_keyword};
 pub struct Lexer<'a>  {
     input:        &'a str,
     position:     usize, // inputに対する現在の位置
-    readPosition: usize, // inputに対する次の読み込みの位置
+    read_position: usize, // inputに対する次の読み込みの位置
     ch:           u8, // 現在検査中の文字
 }
 
@@ -13,7 +13,7 @@ impl<'a>  Lexer<'a>  {
         let mut l = Lexer{
                       input,
                       position: 0,
-                      readPosition: 0,
+                      read_position: 0,
                       ch: 0
                     };
         l.read_char();
@@ -21,27 +21,27 @@ impl<'a>  Lexer<'a>  {
     }
 
     fn read_char(&mut self) {
-    if self.readPosition >= self.input.len() {
+    if self.read_position >= self.input.len() {
         self.ch = 0;
     } else {
-        self.ch = self.input.as_bytes()[self.readPosition];
+        self.ch = self.input.as_bytes()[self.read_position];
         }
-    self.position = self.readPosition;
-    self.readPosition += 1;
+    self.position = self.read_position;
+    self.read_position += 1;
     }
 
     fn peek_char(&mut self) -> u8 {
-        if self.readPosition >= self.input.len(){
+        if self.read_position >= self.input.len(){
             return 0
         } else{
-            return self.input.as_bytes()[self.readPosition]
+            return self.input.as_bytes()[self.read_position]
         }
     }
 
-    pub fn new_token(Type: TokenKind, ch: u8)-> Token { //返り値にtoken.Tokenと指定するとダメ...
+    pub fn new_token(token_type: TokenKind, ch: u8)-> Token { //返り値にtoken.Tokenと指定するとダメ...
         Token {
-              Type,
-              Literal: String::from_utf8(vec![ch]).unwrap(), //ch.to_string()
+              token_type,
+              literal: String::from_utf8(vec![ch]).unwrap(), //ch.to_string()
         }
     }
 
@@ -93,8 +93,8 @@ pub    fn is_digit(ch: &u8) -> bool {
                     let curent_position = self.position;
                     self.read_char();
                     token =  Token {//u8は一文字なので直接tokenに入れる。
-                        Type: TokenKind::EQ,
-                        Literal: String::from(&self.input[curent_position..self.readPosition])
+                        token_type: TokenKind::EQ,
+                        literal: String::from(&self.input[curent_position..self.read_position])
                         }
                 } else{
                 token = Self::new_token(TokenKind::ASSIGN, self.ch);
@@ -108,8 +108,8 @@ pub    fn is_digit(ch: &u8) -> bool {
                     let curent_position = self.position;
                     self.read_char();
                     token =  Token {
-                        Type: TokenKind::NOT_EQ,
-                        Literal: String::from(&self.input[curent_position..self.readPosition])
+                        token_type: TokenKind::NOT_EQ,
+                        literal: String::from(&self.input[curent_position..self.read_position])
                         }
                 } else {
                 token = Self::new_token(TokenKind::BANG, self.ch);
@@ -150,8 +150,8 @@ pub    fn is_digit(ch: &u8) -> bool {
             }
             0 => {
                 token = Token {
-                       Type:  TokenKind::EOF,
-                       Literal: String::from(""),
+                       token_type:  TokenKind::EOF,
+                       literal: String::from(""),
                 };
             }
             _   => {
@@ -161,14 +161,14 @@ pub    fn is_digit(ch: &u8) -> bool {
 //                        println!("{:?}", ident);
 //                        println!("{:?}", ident_token);
                             token =  Token {
-                            Type: ident_token,
-                            Literal: ident
+                            token_type: ident_token,
+                            literal: ident
                      };//ここでreturnしないと文字が一つ読み飛ばされる。
                      return token
                     } else if Self::is_digit(&self.ch) {
                         token =  Token {
-                            Type: TokenKind::INT,
-                            Literal: self.read_number()
+                            token_type: TokenKind::INT,
+                            literal: self.read_number()
                         };
                         return token
                     } else {
@@ -295,8 +295,8 @@ if (5 < 10) {
         println!("{:?}", _token);
 //        println!("{:?}", test.0);
 //        println!("{:?}", test.1);
-        assert_eq!(_token.Type,  test.0);
-        assert_eq!(_token.Literal, test.1);
+        assert_eq!(_token.token_type,  test.0);
+        assert_eq!(_token.literal, test.1);
         }
     }
 }
