@@ -1,6 +1,5 @@
 use super::token::{Token, TokenKind, get_keyword};
 
-
 pub struct Lexer<'a>  {
     input:        &'a str,
     position:     usize, // inputに対する現在の位置
