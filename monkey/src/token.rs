@@ -1,5 +1,5 @@
 
-#[derive(Debug,Eq,PartialEq)]
+#[derive(Debug,Eq,PartialEq, Clone)]
 pub enum TokenKind {
      ILLEGAL,     // ILLEGAL
      EOF,         // EOF
@@ -37,6 +37,8 @@ pub enum TokenKind {
      IF,          // if
      ELSE,        // else
      RETURN,      // return
+
+     DEFAULT,
 }
 
 pub fn get_keyword(ident: &str) -> TokenKind {
@@ -72,7 +74,7 @@ pub fn get_keyword(ident: &str) -> TokenKind {
 
 
 // if other module refers to Token, pub is needed to write 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: TokenKind,
     pub literal: String
