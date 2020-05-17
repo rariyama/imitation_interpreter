@@ -51,7 +51,6 @@ impl<'a>  Lexer<'a>  {
             self.read_char();
         }
         self.input.get(position..self.position).unwrap().to_string()
-//        self.input[..self.position].to_string()
     }
 
     fn read_number(&mut self) -> String {
@@ -73,16 +72,12 @@ pub    fn is_digit(ch: &u8) -> bool {
     }
 
     fn skip_whitespace(&mut self) {
-//        while self.ch == b' ' || self.ch == b'\n' {
     while self.ch == b' ' || self.ch == b'\t' || self.ch == b'\n' || self.ch == b'\r' {
         self.read_char();
         }
     }
 
     pub fn next_token(&mut self) -> Token {
-//        println!("{}", self.ch.to_string());
-//        println!("{}", b' ');
-//        println!("char is {}",c);
         self.skip_whitespace();
         let token;
         match self.ch {
@@ -158,8 +153,6 @@ pub    fn is_digit(ch: &u8) -> bool {
                     if Self::is_letter(&self.ch) {
                         let ident = self.read_identifier();
                         let ident_token = get_keyword(&ident);
-//                        println!("{:?}", ident);
-//                        println!("{:?}", ident_token);
                             token =  Token {
                             token_type: ident_token,
                             literal: ident
@@ -186,7 +179,7 @@ pub    fn is_digit(ch: &u8) -> bool {
 mod testing {
     use crate::lexer::Lexer;
     use crate::token::TokenKind;
-    //    use lexer::Lexer;//if you need to refer the code inside this file, you can use 'super'
+//    use lexer::Lexer;//if you need to refer the code inside this file, you can use 'super'
 //    use token::TokenKind;
 
     #[test]
@@ -286,15 +279,9 @@ if (5 < 10) {
                (TokenKind::EOF, String::from("")),
                 ];
 
-//    let mut l = Lexer::new(input.to_string());
     let mut lexer = Lexer::new(input);
-//    println!("{:?}", lexer.position);
     for test in tests.iter() {
-//        println!("{:?}", test.1);
         let _token = lexer.next_token();
-        println!("{:?}", _token);
-//        println!("{:?}", test.0);
-//        println!("{:?}", test.1);
         assert_eq!(_token.token_type,  test.0);
         assert_eq!(_token.literal, test.1);
         }

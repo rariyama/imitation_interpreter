@@ -13,15 +13,15 @@ pub struct Parser<'a>  {
 impl<'a>  Parser<'a>  {
     pub fn new(l: lexer::Lexer<'a>) -> Self {
         // Goだと初期化時に省略するが、rustではできないためはじめにやる。
-        let current_token =l.next_token();
-        let next_token = l.next_token();
 
-        let mut p = &Parser{
+        let mut p = Parser{
             lexer: l,
-            current_token: current_token,
-            next_token: next_token
+            current_token: Token{token_type: TokenKind::DEFAULT, literal: "default".to_string() },
+            next_token: Token{token_type: TokenKind::DEFAULT, literal: "default".to_string() }
         };
-        return *p;
+        p.next_token();
+        p.next_token();
+        p
     }
 
     fn next_token(&mut self) {
@@ -30,14 +30,13 @@ impl<'a>  Parser<'a>  {
     }
 
     pub fn parse_program(&mut self) -> Program{
-        let mut statements: Vec<Box<Statement>> = vec![];
+        let mut statements: Vec<Statement> = vec![];
 
         // eofになるまでstatementsを配列に入れる。
         while !self.is_current_token(TokenKind::EOF){
             let statement = self.parse_statement();
-            if statement.len() != 0 {
-                statements.push(statement.unwrap());
-            }
+            println!("statement is : {:?}", statement);
+            statements.push(statement);
             self.next_token();
         };
         // 読んだ式をprogramに入れて返す。
@@ -46,32 +45,31 @@ impl<'a>  Parser<'a>  {
         }
     }
 
-    fn parse_statement(&mut self) -> Option<Box<Statement>> {
+    fn parse_statement(&mut self) -> Statement {
         match self.current_token.token_type {
             TokenKind::LET => {
-                self.parse_let_statement()
+                Statement::LetStatement(self.parse_let_statement())
             },
             _ => {
-                None
+                panic!()
             }
         }
     }
 
-    fn parse_let_statement(&mut self) -> Option<Box<LetStatement>> {
+    fn parse_let_statement(&mut self) -> LetStatement {
         let current_token = self.current_token.clone();
         let identifier = self.next_token.clone();
 
         if !self.expect_next_token(TokenKind::IDENT) {
-            return None
+            return panic!()
         }
 
         let name = Identifier {
-            Token: self.current_token.clone(),
-            Value: self.current_token.literal.clone(),
+            value: self.current_token.literal.clone(),
         };
 
         if !self.expect_next_token(TokenKind::ASSIGN) {
-            return None
+            return panic!()
         }
 
         while !self.is_current_token(TokenKind::SEMICOLON) {
@@ -79,10 +77,11 @@ impl<'a>  Parser<'a>  {
         }
         // セミコロンまでの読み飛ばしをしてからstatementを定義して返す。
         let stmt = LetStatement {
-            Token: current_token,
-            Name: name,
-            Value: current_token.literal
+            identifier: Identifier{
+                value: identifier.literal
+            }
         };
+        println!("stmt is {:?}", stmt);
         return stmt
     }
 
@@ -95,10 +94,11 @@ impl<'a>  Parser<'a>  {
     }
 
     fn expect_next_token(&mut self, token_kind: TokenKind) -> bool {
-        if self.is_next_token(token_kind) {
+        let expect_token = self.is_next_token(token_kind);
+        if expect_token {
             self.next_token();
         };
-        self.is_next_token(token_kind)
+        expect_token
     }
 }
 
@@ -107,7 +107,9 @@ impl<'a>  Parser<'a>  {
 mod testing {
     use crate::lexer::Lexer;
     use crate::token::TokenKind;
-    use crate::ast;
+    use crate::ast::Statement;
+    use crate::ast::LetStatement;
+    use crate::ast::Identifier;
     use crate::parser::Parser;
 
     #[test]
@@ -117,8 +119,9 @@ mod testing {
                        let foobar = 838383;"#;
         
         let lexer = Lexer::new(&input);
-        let parser = Parser::new(lexer);
+        let mut parser = Parser::new(lexer);
         let program = parser.parse_program();
+        println!("{:?}", program);
         assert_eq!(program.statements.len(), 3);
 
         let tests = vec![
@@ -128,7 +131,9 @@ mod testing {
         ];
 
         for (i, test) in tests.iter().enumerate() {
-            assert_eq!(program.statements[i], test);
+            let stmt = &program.statements[i];
+            println!("{:?}", stmt);
+            assert_eq!(stmt, &Statement::LetStatement(LetStatement{identifier: Identifier{value: test.to_string()}}));
         }
     }
 }

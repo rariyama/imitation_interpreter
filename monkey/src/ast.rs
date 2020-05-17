@@ -1,63 +1,40 @@
-use crate::{lexer, token};
+use super::lexer;
+use super::token::{Token};
 
 
 pub trait Node {
     fn token_literal(&self) -> String;
 }
 
-pub trait Statement: Node {
-    fn statement_node(&self) -> String;
+//pub trait Statement: Node {
+//    fn statement_node(&self);
+//}
+
+//pub trait Expression: Node {
+//    fn expression_node(&self);
+//}
+
+#[derive(Debug,PartialEq)]
+pub struct Program {
+    pub statements: Vec<Statement>
 }
 
-pub trait Expression: Node {
-    fn expression_node(&self) -> String;
+#[derive(Debug,PartialEq)]
+pub enum Statement {
+    LetStatement(LetStatement)
 }
 
-
-#[derive(Debug,Eq,PartialEq)]
-pub struct Program<T: Statement> {
-    pub statements: Vec<T>
+#[derive(Debug,PartialEq)]
+pub struct LetStatement {
+    pub identifier: Identifier
 }
 
-// Progtramの引数にStatementTを指定する。
-// Goのソースコードがinterface型なため<T>にしてみる。
-impl <T: Statement> Node for Program<T> {
-    fn token_literal(& self)  -> String {
-        if self.statements.len() > 0 {
-            return self.token_literal()
-        }
-        else {
-            return "".to_string()
-        }
-    }
-}
-// valueはinterface型にするため<T>にする。
-pub struct LetStatement<T: Expression> {
-    Token: token::Token, // let token
-    Name:   Identifier,
-    Value:  T
+pub enum Expression {
+    Identifier(Identifier)
 }
 
-impl <T: Expression> Node for LetStatement<T> {
-    fn token_literal(&self) -> String {
-        return self.Token.literal.clone() //cloneを使うことで借用権エラーを防ぐ。
-    }
-}
-
-
+#[derive(Debug,PartialEq)]
 pub struct Identifier {
-    Token: token::Token, // token.IDENT token
-    Value: String
+    pub value: String
 }
-
-impl Identifier {
-    pub fn expression_node(&mut self) {}
-    pub fn token_literal(&mut self) -> String {
-        return self.Token.literal.clone()
-    } 
-}
-
-
-
-
 
