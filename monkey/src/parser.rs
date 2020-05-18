@@ -17,7 +17,7 @@ impl<'a>  Parser<'a>  {
         let mut p = Parser{
             lexer: l,
             current_token: Token{token_type: TokenKind::DEFAULT, literal: "default".to_string() },
-            next_token: Token{token_type: TokenKind::DEFAULT, literal: "default".to_string() }
+            next_token: Token{token_type: TokenKind::DEFAULT, literal: "default".to_string() },
         };
         p.next_token();
         p.next_token();
@@ -35,7 +35,7 @@ impl<'a>  Parser<'a>  {
         // eofになるまでstatementsを配列に入れる。
         while !self.is_current_token(TokenKind::EOF){
             let statement = self.parse_statement();
-            println!("statement is : {:?}", statement);
+//            println!("statement is : {:?}", statement);
             statements.push(statement);
             self.next_token();
         };
@@ -81,7 +81,7 @@ impl<'a>  Parser<'a>  {
                 value: identifier.literal
             }
         };
-        println!("stmt is {:?}", stmt);
+//        println!("stmt is {:?}", stmt);
         return stmt
     }
 
@@ -97,7 +97,9 @@ impl<'a>  Parser<'a>  {
         let expect_token = self.is_next_token(token_kind);
         if expect_token {
             self.next_token();
-        };
+        } else {
+            println!("expect_token is {:?} but accually got {:?}", token_kind, self.next_token.token_type);
+        }
         expect_token
     }
 }
@@ -121,7 +123,7 @@ mod testing {
         let lexer = Lexer::new(&input);
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program();
-        println!("{:?}", program);
+//        println!("{:?}", program);
         assert_eq!(program.statements.len(), 3);
 
         let tests = vec![
@@ -132,7 +134,7 @@ mod testing {
 
         for (i, test) in tests.iter().enumerate() {
             let stmt = &program.statements[i];
-            println!("{:?}", stmt);
+//            println!("{:?}", stmt);
             assert_eq!(stmt, &Statement::LetStatement(LetStatement{identifier: Identifier{value: test.to_string()}}));
         }
     }

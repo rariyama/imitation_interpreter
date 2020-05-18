@@ -1,5 +1,5 @@
 
-#[derive(Debug,Eq,PartialEq, Clone)]
+#[derive(Debug,Eq,PartialEq, Clone, Copy)]
 pub enum TokenKind {
      ILLEGAL,     // ILLEGAL
      EOF,         // EOF
