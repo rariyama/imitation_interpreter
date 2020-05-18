@@ -1,7 +1,7 @@
 use crate::ast::Identifier;
 use super::token::{Token, TokenKind};
 use super::lexer;
-use super::ast::{Program, Statement, LetStatement};
+use super::ast::{Program, Statement, LetStatement, ReturnStatement};
 
 #[derive(Debug, Clone)]
 pub struct Parser<'a>  {
@@ -50,6 +50,9 @@ impl<'a>  Parser<'a>  {
             TokenKind::LET => {
                 Statement::LetStatement(self.parse_let_statement())
             },
+            TokenKind::RETURN => {
+                Statement::ReturnStatement(self.parse_return_statement())
+            },
             _ => {
                 panic!()
             }
@@ -57,31 +60,44 @@ impl<'a>  Parser<'a>  {
     }
 
     fn parse_let_statement(&mut self) -> LetStatement {
-        let current_token = self.current_token.clone();
+//        let current_token = self.current_token.clone();
         let identifier = self.next_token.clone();
 
         if !self.expect_next_token(TokenKind::IDENT) {
             return panic!()
         }
 
-        let name = Identifier {
-            value: self.current_token.literal.clone(),
-        };
+//        let name = Identifier {
+//            value: self.current_token.literal.clone(),
+//        };
 
         if !self.expect_next_token(TokenKind::ASSIGN) {
             return panic!()
         }
 
+        // セミコロンまでの読み飛ばしをしてからstatementを定義して返す。
         while !self.is_current_token(TokenKind::SEMICOLON) {
             self.next_token()
         }
-        // セミコロンまでの読み飛ばしをしてからstatementを定義して返す。
         let stmt = LetStatement {
             identifier: Identifier{
                 value: identifier.literal
             }
         };
-//        println!("stmt is {:?}", stmt);
+        return stmt
+    }
+
+    fn parse_return_statement(&mut self) -> ReturnStatement {
+        let identifier = self.next_token.clone();
+        let stmt = ReturnStatement {
+            identifier: Identifier{
+                value: identifier.literal
+            }
+        };
+        // セミコロンまでの読み飛ばしをしてからstatementを定義して返す。
+        while !self.is_current_token(TokenKind::SEMICOLON) {
+            self.next_token()
+        }
         return stmt
     }
 
@@ -107,6 +123,7 @@ impl<'a>  Parser<'a>  {
 // if cfg(test) is written, test code is compiled only when test runs
 #[cfg(test)]// test runs only when execute cargo run
 mod testing {
+    use crate::ast::ReturnStatement;
     use crate::lexer::Lexer;
     use crate::token::TokenKind;
     use crate::ast::Statement;
@@ -136,6 +153,30 @@ mod testing {
             let stmt = &program.statements[i];
 //            println!("{:?}", stmt);
             assert_eq!(stmt, &Statement::LetStatement(LetStatement{identifier: Identifier{value: test.to_string()}}));
+        }
+    }
+
+    #[test]
+    fn test_return_statement() {
+        let input = r#"return 5;
+                       return 10;
+                       return 993322;"#;
+        
+        let lexer = Lexer::new(&input);
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program();
+//        println!("{:?}", program);
+        assert_eq!(program.statements.len(), 3);
+
+        let tests = vec![
+            "5",
+            "10",
+            "993322",
+        ];
+
+        for (i, test) in tests.iter().enumerate() {
+            let stmt = &program.statements[i];
+            assert_eq!(stmt, &Statement::ReturnStatement(ReturnStatement{identifier: Identifier{value: test.to_string()}}));
         }
     }
 }
