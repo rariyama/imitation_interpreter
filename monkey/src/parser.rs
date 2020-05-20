@@ -1,7 +1,6 @@
-use crate::ast::Identifier;
 use super::token::{Token, TokenKind};
 use super::lexer;
-use super::ast::{Program, Statement, LetStatement, ReturnStatement};
+use super::ast::{Program, Statement, LetStatement, ReturnStatement, Expression, ExpressionStatement, ExpressionKind, Identifier};
 
 #[derive(Debug, Clone)]
 pub struct Parser<'a>  {
@@ -54,7 +53,7 @@ impl<'a>  Parser<'a>  {
                 Statement::ReturnStatement(self.parse_return_statement())
             },
             _ => {
-                panic!()
+                Statement::ExpressionStatement(self.parse_expression_statement())
             }
         }
     }
@@ -101,6 +100,26 @@ impl<'a>  Parser<'a>  {
         return stmt
     }
 
+    fn parse_expression_statement(&mut self) -> ExpressionStatement {
+        let expression = self.parse_expression();
+
+        if self.is_next_token(TokenKind::SEMICOLON) {
+            self.next_token()
+        }
+        return ExpressionStatement{expression: expression}
+    }
+
+    fn parse_expression(&mut self) -> Expression {
+        match self.current_token.token_type {
+            TokenKind::IDENT => Expression::Identifier(self.parse_identifier()),
+            _ => panic!()
+        }
+    }
+
+    fn parse_identifier(&mut self) -> Identifier {
+        return Identifier{value: self.current_token.literal.to_string()}
+    }
+
     fn is_current_token(&self, token_kind: TokenKind) -> bool {
         self.current_token.token_type == token_kind
     }
@@ -127,6 +146,8 @@ mod testing {
     use crate::lexer::Lexer;
     use crate::token::TokenKind;
     use crate::ast::Statement;
+    use crate::ast::Expression;
+    use crate::ast::ExpressionStatement;
     use crate::ast::LetStatement;
     use crate::ast::Identifier;
     use crate::parser::Parser;
@@ -179,4 +200,19 @@ mod testing {
             assert_eq!(stmt, &Statement::ReturnStatement(ReturnStatement{identifier: Identifier{value: test.to_string()}}));
         }
     }
-}
+    #[test]
+    fn test_identifier_expression() {
+        let input = "foobar;".to_string();
+        
+        let lexer = Lexer::new(&input);
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program();
+        assert_eq!(program.statements.len(), 1); // 識別子が一つであること
+//        println!("{:?}", program);
+//        println!("{:?}", program.statements);
+//        println!("{:?}", Statement::ExpressionStatement(ExpressionStatement{expression: Expression::Identifier(Identifier{value: "foobar".to_string()})}));
+        let test_ident = Statement::ExpressionStatement(ExpressionStatement{expression: Expression::Identifier(Identifier{value: "foobar".to_string()})});
+        assert_eq!(program.statements[0], test_ident)
+        // let test_identifier = program.statements[0].ExpressionStatement;
+        }
+    }
