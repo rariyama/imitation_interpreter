@@ -70,11 +70,17 @@ pub struct ExpressionStatement {
 
 #[derive(Debug,PartialEq)]
 pub enum Expression {
-    Identifier(Identifier)
+    Identifier(Identifier),
+    Integer(Integer)
 }
 
 #[derive(Debug,PartialEq)]
 pub struct Identifier {
+    pub value: String
+}
+
+#[derive(Debug,PartialEq)]
+pub struct Integer {
     pub value: String
 }
 
