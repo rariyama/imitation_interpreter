@@ -1,6 +1,6 @@
 use super::token::{Token, TokenKind};
 use super::lexer;
-use super::ast::{Program, Statement, LetStatement, ReturnStatement, Expression, ExpressionStatement, ExpressionKind, Identifier, Integer};
+use super::ast::{Program, Statement, LetStatement, ReturnStatement, Expression, ExpressionStatement, ExpressionKind, Identifier, Integer, PrefixExpression};
 
 #[derive(Debug, Clone)]
 pub struct Parser<'a>  {
@@ -53,6 +53,7 @@ impl<'a>  Parser<'a>  {
                 Statement::ReturnStatement(self.parse_return_statement())
             },
             _ => {
+                println!("{:?}", self.current_token);
                 Statement::ExpressionStatement(self.parse_expression_statement())
             }
         }
@@ -113,6 +114,8 @@ impl<'a>  Parser<'a>  {
         match self.current_token.token_type {
             TokenKind::IDENT => Expression::Identifier(self.parse_identifier()),
             TokenKind::INT => Expression::Integer(self.parse_integer()),
+            TokenKind::BANG => Expression::PrefixExpression(self.parse_prefix_expression()),
+            TokenKind::MINUS => Expression::PrefixExpression(self.parse_prefix_expression()),
             _ => panic!()
         }
     }
@@ -123,6 +126,17 @@ impl<'a>  Parser<'a>  {
 
     fn parse_integer(&mut self) -> Integer {
         return Integer{value: self.current_token.literal.to_string()}
+    }
+
+    fn parse_prefix_expression(&mut self) ->PrefixExpression {
+        let current_token = self.current_token.literal.to_string();
+        self.next_token();
+        let right = self.parse_expression();
+        let expression = PrefixExpression{
+                                           operator: current_token,
+                                           right_expression: Box::new(right)
+                                        };
+        return expression
     }
 
     fn is_current_token(&self, token_kind: TokenKind) -> bool {
@@ -156,6 +170,7 @@ mod testing {
     use crate::ast::LetStatement;
     use crate::ast::Identifier;
     use crate::ast::Integer;
+    use crate::ast::PrefixExpression;
     use crate::parser::Parser;
 
     #[test]
@@ -192,7 +207,6 @@ mod testing {
         let lexer = Lexer::new(&input);
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program();
-//        println!("{:?}", program);
         assert_eq!(program.statements.len(), 3);
 
         let tests = vec![
@@ -214,12 +228,8 @@ mod testing {
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program();
         assert_eq!(program.statements.len(), 1); // 識別子が一つであること
-//        println!("{:?}", program);
-//        println!("{:?}", program.statements);
-//        println!("{:?}", Statement::ExpressionStatement(ExpressionStatement{expression: Expression::Identifier(Identifier{value: "foobar".to_string()})}));
         let test_ident = Statement::ExpressionStatement(ExpressionStatement{expression: Expression::Identifier(Identifier{value: "foobar".to_string()})});
         assert_eq!(program.statements[0], test_ident)
-        // let test_identifier = program.statements[0].ExpressionStatement;
         }
 
         #[test]
@@ -229,12 +239,27 @@ mod testing {
             let lexer = Lexer::new(&input);
             let mut parser = Parser::new(lexer);
             let program = parser.parse_program();
-            assert_eq!(program.statements.len(), 1); // 識別子が一つであること
-    //        println!("{:?}", program);
-    //        println!("{:?}", program.statements);
-    //        println!("{:?}", Statement::ExpressionStatement(ExpressionStatement{expression: Expression::Identifier(Identifier{value: "foobar".to_string()})}));
+            assert_eq!(program.statements.len(), 1); // confirm the number of statements is 1.
             let test_ident = Statement::ExpressionStatement(ExpressionStatement{expression: Expression::Integer(Integer{value: "5".to_string()})});
             assert_eq!(program.statements[0], test_ident)
-            // let test_identifier = program.statements[0].ExpressionStatement;
             }
-    }
+
+        #[test]
+        fn test_prefix_expression() {
+            let prefix_tests = vec![
+                                ("!5", "!", 5),
+                                ("-15", "-", 15)
+                                   ];
+            // compare the result of parseing the first element of tuple
+            // with second, third elements.
+            for (test, left, right) in prefix_tests.iter() {
+                let lexer = Lexer::new(test);
+                let mut parser = Parser::new(lexer);
+                let program = parser.parse_program();
+                assert_eq!(program.statements.len(), 1); // confirm the number of statements is 1.
+                let test_prefix = Statement::ExpressionStatement(ExpressionStatement{expression: Expression::PrefixExpression(
+                PrefixExpression{operator: left.to_string(), right_expression: Box::new(Expression::Integer(Integer{value: right.to_string()}))})});
+                assert_eq!(program.statements[0], test_prefix);
+                }
+            }
+}
