@@ -72,7 +72,8 @@ pub struct ExpressionStatement {
 pub enum Expression {
     Identifier(Identifier),
     Integer(Integer),
-    PrefixExpression(PrefixExpression)
+    PrefixExpression(PrefixExpression),
+    InfixExpression(InfixExpression)
 }
 
 #[derive(Debug,PartialEq)]
@@ -91,7 +92,15 @@ pub struct PrefixExpression {
     pub right_expression: Box<Expression>
 }
 
-pub enum ExpressionKind {
+#[derive(Debug,PartialEq)]
+pub struct InfixExpression {
+    pub left_expression: Box<Expression>,
+    pub operator: String,
+    pub right_expression: Box<Expression>
+}
+
+#[derive(Debug, PartialEq, PartialOrd)]
+pub enum Precedence {
     LOWEST,      
     EQUALS,       // ==
     LESSGREATER,  // > or <

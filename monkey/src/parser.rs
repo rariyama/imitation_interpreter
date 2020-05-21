@@ -1,6 +1,6 @@
 use super::token::{Token, TokenKind};
 use super::lexer;
-use super::ast::{Program, Statement, LetStatement, ReturnStatement, Expression, ExpressionStatement, ExpressionKind, Identifier, Integer, PrefixExpression};
+use super::ast::{Program, Statement, LetStatement, ReturnStatement, Expression, ExpressionStatement, Precedence, Identifier, Integer, PrefixExpression, InfixExpression};
 
 #[derive(Debug, Clone)]
 pub struct Parser<'a>  {
@@ -34,7 +34,6 @@ impl<'a>  Parser<'a>  {
         // eofになるまでstatementsを配列に入れる。
         while !self.is_current_token(TokenKind::EOF){
             let statement = self.parse_statement();
-//            println!("statement is : {:?}", statement);
             statements.push(statement);
             self.next_token();
         };
@@ -53,23 +52,17 @@ impl<'a>  Parser<'a>  {
                 Statement::ReturnStatement(self.parse_return_statement())
             },
             _ => {
-                println!("{:?}", self.current_token);
                 Statement::ExpressionStatement(self.parse_expression_statement())
             }
         }
     }
 
     fn parse_let_statement(&mut self) -> LetStatement {
-//        let current_token = self.current_token.clone();
         let identifier = self.next_token.clone();
 
         if !self.expect_next_token(TokenKind::IDENT) {
             return panic!()
         }
-
-//        let name = Identifier {
-//            value: self.current_token.literal.clone(),
-//        };
 
         if !self.expect_next_token(TokenKind::ASSIGN) {
             return panic!()
@@ -111,13 +104,56 @@ impl<'a>  Parser<'a>  {
     }
 
     fn parse_expression(&mut self) -> Expression {
-        match self.current_token.token_type {
+        let exp = match self.current_token.token_type {
             TokenKind::IDENT => Expression::Identifier(self.parse_identifier()),
             TokenKind::INT => Expression::Integer(self.parse_integer()),
             TokenKind::BANG => Expression::PrefixExpression(self.parse_prefix_expression()),
             TokenKind::MINUS => Expression::PrefixExpression(self.parse_prefix_expression()),
             _ => panic!()
+        };
+        // 
+        while !self.is_next_token(TokenKind::SEMICOLON) && self.current_precedence() < self.next_precedence() {
+            match self.next_token.token_type {
+                TokenKind::PLUS => {
+                    //since operator must be set in current position,
+                    //so token must be read once forward.
+                    self.next_token();
+                    return self.parse_infix_expression(exp);
+                },
+                TokenKind::MINUS => {
+                    self.next_token();
+                    return self.parse_infix_expression(exp);
+                },
+                TokenKind::SLASH => {
+                    self.next_token();
+                    return self.parse_infix_expression(exp);
+                },
+                TokenKind::ASTERISK => {
+                    self.next_token();
+                    return self.parse_infix_expression(exp);
+                },
+                TokenKind::EQ => {
+                    self.next_token();
+                    return self.parse_infix_expression(exp);
+                },
+                TokenKind::NotEq => {
+                    self.next_token();
+                    return self.parse_infix_expression(exp);
+                },
+                TokenKind::LT => {
+                    self.next_token();
+                    return self.parse_infix_expression(exp);
+                },
+                TokenKind::GT => {
+                    self.next_token();
+                    return self.parse_infix_expression(exp);
+                },
+                _ => {
+                    panic!();                   
+                }
+            }
         }
+        return exp
     }
 
     fn parse_identifier(&mut self) -> Identifier {
@@ -137,6 +173,39 @@ impl<'a>  Parser<'a>  {
                                            right_expression: Box::new(right)
                                         };
         return expression
+    }
+
+    fn parse_infix_expression(&mut self, left: Expression) -> Expression {
+        let operator = match self.current_token.token_type {
+            TokenKind::PLUS => "+".to_string(),
+            TokenKind::MINUS => "-".to_string(),
+            TokenKind::ASTERISK => "*".to_string(),
+            TokenKind::SLASH => "/".to_string(),
+            TokenKind::EQ => "==".to_string(),
+            TokenKind::NotEq => "!=".to_string(),
+            TokenKind::LT => "<".to_string(),
+            TokenKind::GT => ">".to_string(),
+            _ => {panic!()}
+        };
+        // the current token should be read in parse_expression().
+        // so token must be read in order that the expression next operator
+        // is set to current_token
+        self.next_token();
+        let right = self.parse_expression();
+        let infix_expression = InfixExpression{
+                                    left_expression: Box::new(left),
+                                    operator: operator,
+                                    right_expression: Box::new(right)
+        };
+        return Expression::InfixExpression(infix_expression)
+    }
+
+    fn current_precedence(&mut self) -> Precedence {
+        return self.current_token.get_precedence()
+    }
+
+    fn next_precedence(&mut self) -> Precedence {
+        return self.next_token.get_precedence()
     }
 
     fn is_current_token(&self, token_kind: TokenKind) -> bool {
@@ -171,6 +240,7 @@ mod testing {
     use crate::ast::Identifier;
     use crate::ast::Integer;
     use crate::ast::PrefixExpression;
+    use crate::ast::InfixExpression;
     use crate::parser::Parser;
 
     #[test]
@@ -182,7 +252,6 @@ mod testing {
         let lexer = Lexer::new(&input);
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program();
-//        println!("{:?}", program);
         assert_eq!(program.statements.len(), 3);
 
         let tests = vec![
@@ -193,7 +262,6 @@ mod testing {
 
         for (i, test) in tests.iter().enumerate() {
             let stmt = &program.statements[i];
-//            println!("{:?}", stmt);
             assert_eq!(stmt, &Statement::LetStatement(LetStatement{identifier: Identifier{value: test.to_string()}}));
         }
     }
@@ -262,4 +330,36 @@ mod testing {
                 assert_eq!(program.statements[0], test_prefix);
                 }
             }
-}
+
+            #[test]
+            fn test_infix_expression() {
+                let infix_tests = vec![
+                                    ("5 + 5;", 5, "+", 5),
+                                    ("5 - 5;", 5, "-", 5),
+                                    ("5 * 5;", 5, "*", 5),
+                                    ("5 / 5;", 5, "/", 5),
+                                    ("5 > 5;", 5, ">", 5),
+                                    ("5 < 5;", 5, "<", 5),
+                                    ("5 == 5;", 5, "==", 5),
+                                    ("5 != 5;", 5, "!=", 5),
+                                    ];
+                // compare the result of parseing the first element of tuple
+                // with second, third elements.
+                for (test, left, middle, right) in infix_tests.iter() {
+                    let lexer = Lexer::new(test);
+                    let mut parser = Parser::new(lexer);
+                    let program = parser.parse_program();
+                    assert_eq!(program.statements.len(), 1); // confirm the number of statements is 1.
+                    let test_infix = Statement::ExpressionStatement(
+                        ExpressionStatement{expression: Expression::InfixExpression(
+                        InfixExpression{left_expression: Box::new(Expression::Integer(Integer{value: left.to_string()})),
+                                        operator: middle.to_string(),
+                                        right_expression: Box::new(Expression::Integer(Integer{value: right.to_string()}))
+                                        }
+                                    )
+                                }
+                            );
+                    assert_eq!(program.statements[0], test_infix);
+                    }
+                }
+            }

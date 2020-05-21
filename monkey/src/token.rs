@@ -1,3 +1,4 @@
+use super::ast::{Precedence};
 
 #[derive(Debug,Eq,PartialEq, Clone, Copy)]
 pub enum TokenKind {
@@ -72,10 +73,25 @@ pub fn get_keyword(ident: &str) -> TokenKind {
     }
 }
 
-
 // if other module refers to Token, pub is needed to write 
 #[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: TokenKind,
     pub literal: String
+}
+
+impl Token {
+    pub fn get_precedence(&mut self) -> Precedence {
+        match self.token_type {
+            TokenKind::EQ => Precedence::EQUALS,
+            TokenKind::NotEq => Precedence::EQUALS,
+            TokenKind::LT => Precedence::LESSGREATER,        
+            TokenKind::GT => Precedence::LESSGREATER,        
+            TokenKind::PLUS => Precedence::SUM,
+            TokenKind::MINUS => Precedence::SUM,
+            TokenKind::SLASH => Precedence::PRODUCT,
+            TokenKind::ASTERISK => Precedence::PRODUCT,
+            _                   => Precedence::LOWEST
+        }
+    }
 }

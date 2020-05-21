@@ -1,7 +1,8 @@
 mod lexer;
 mod repl;
 mod token;
-
+mod parser;
+mod ast;
 
 fn main() {
     println!("Hello, world!");
