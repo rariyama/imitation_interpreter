@@ -72,6 +72,7 @@ pub struct ExpressionStatement {
 pub enum Expression {
     Identifier(Identifier),
     Integer(Integer),
+    Bool(Bool),
     PrefixExpression(PrefixExpression),
     InfixExpression(InfixExpression)
 }
@@ -84,6 +85,11 @@ pub struct Identifier {
 #[derive(Debug,PartialEq)]
 pub struct Integer {
     pub value: String
+}
+
+#[derive(Debug,PartialEq)]
+pub struct Bool {
+    pub value: bool
 }
 
 #[derive(Debug,PartialEq)]

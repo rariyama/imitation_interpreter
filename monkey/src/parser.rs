@@ -1,6 +1,9 @@
 use super::token::{Token, TokenKind};
 use super::lexer;
-use super::ast::{Program, Statement, LetStatement, ReturnStatement, Expression, ExpressionStatement, Precedence, Identifier, Integer, PrefixExpression, InfixExpression};
+use super::ast::{Program, Statement, LetStatement, ReturnStatement, 
+                 Expression, ExpressionStatement, Precedence,
+                 Identifier, Integer, Bool,
+                 PrefixExpression, InfixExpression};
 
 #[derive(Debug, Clone)]
 pub struct Parser<'a>  {
@@ -95,61 +98,61 @@ impl<'a>  Parser<'a>  {
     }
 
     fn parse_expression_statement(&mut self) -> ExpressionStatement {
-        let expression = self.parse_expression();
-
+        let expression = self.parse_expression(Precedence::LOWEST);
         if self.is_next_token(TokenKind::SEMICOLON) {
             self.next_token()
         }
         return ExpressionStatement{expression: expression}
     }
 
-    fn parse_expression(&mut self) -> Expression {
-        let exp = match self.current_token.token_type {
+    fn parse_expression(&mut self, precedence: Precedence) -> Expression {
+        let mut exp = match self.current_token.token_type {
             TokenKind::IDENT => Expression::Identifier(self.parse_identifier()),
             TokenKind::INT => Expression::Integer(self.parse_integer()),
+            TokenKind::TRUE => Expression::Bool(Bool{value: true}),
+            TokenKind::FALSE => Expression::Bool(Bool{value: false}),
             TokenKind::BANG => Expression::PrefixExpression(self.parse_prefix_expression()),
             TokenKind::MINUS => Expression::PrefixExpression(self.parse_prefix_expression()),
-            _ => panic!()
+            _ => panic!(println!("{:?}",self.current_token.token_type))
         };
-        // 
-        while !self.is_next_token(TokenKind::SEMICOLON) && self.current_precedence() < self.next_precedence() {
+        while !self.is_next_token(TokenKind::SEMICOLON) && precedence < self.next_precedence() {
             match self.next_token.token_type {
                 TokenKind::PLUS => {
                     //since operator must be set in current position,
                     //so token must be read once forward.
                     self.next_token();
-                    return self.parse_infix_expression(exp);
+                    exp =  self.parse_infix_expression(exp);
                 },
                 TokenKind::MINUS => {
                     self.next_token();
-                    return self.parse_infix_expression(exp);
+                    exp =  self.parse_infix_expression(exp);
                 },
                 TokenKind::SLASH => {
                     self.next_token();
-                    return self.parse_infix_expression(exp);
+                    exp =  self.parse_infix_expression(exp);
                 },
                 TokenKind::ASTERISK => {
                     self.next_token();
-                    return self.parse_infix_expression(exp);
+                    exp =  self.parse_infix_expression(exp);
                 },
                 TokenKind::EQ => {
                     self.next_token();
-                    return self.parse_infix_expression(exp);
+                    exp =  self.parse_infix_expression(exp);
                 },
                 TokenKind::NotEq => {
                     self.next_token();
-                    return self.parse_infix_expression(exp);
+                    exp =  self.parse_infix_expression(exp);
                 },
                 TokenKind::LT => {
                     self.next_token();
-                    return self.parse_infix_expression(exp);
+                    exp =  self.parse_infix_expression(exp);
                 },
                 TokenKind::GT => {
                     self.next_token();
-                    return self.parse_infix_expression(exp);
+                    exp =  self.parse_infix_expression(exp);
                 },
                 _ => {
-                    panic!();                   
+                    &exp;                   
                 }
             }
         }
@@ -163,11 +166,11 @@ impl<'a>  Parser<'a>  {
     fn parse_integer(&mut self) -> Integer {
         return Integer{value: self.current_token.literal.to_string()}
     }
-
+    
     fn parse_prefix_expression(&mut self) ->PrefixExpression {
         let current_token = self.current_token.literal.to_string();
         self.next_token();
-        let right = self.parse_expression();
+        let right = self.parse_expression(Precedence::PREFIX);
         let expression = PrefixExpression{
                                            operator: current_token,
                                            right_expression: Box::new(right)
@@ -190,8 +193,9 @@ impl<'a>  Parser<'a>  {
         // the current token should be read in parse_expression().
         // so token must be read in order that the expression next operator
         // is set to current_token
+        let precedence = self.current_precedence();
         self.next_token();
-        let right = self.parse_expression();
+        let right = self.parse_expression(precedence);
         let infix_expression = InfixExpression{
                                     left_expression: Box::new(left),
                                     operator: operator,
@@ -239,6 +243,7 @@ mod testing {
     use crate::ast::LetStatement;
     use crate::ast::Identifier;
     use crate::ast::Integer;
+    use crate::ast::Bool;
     use crate::ast::PrefixExpression;
     use crate::ast::InfixExpression;
     use crate::parser::Parser;
@@ -366,11 +371,13 @@ mod testing {
             #[test]
             fn test_operator_precedence_parsing() {
                 let infix_tests = vec![
-                                    ("-a *b", "((-a) * b)"),
-                                    ("!-a", "(!(-a))"),
+//                                    ("-a *b", "((-a) * b)"),
+//                                    ("!-a", "(!(-a))"),
                                     ("a + b + c", "((a + b) + c)"),
                                     ("a + b - c", "((a + b) - c)"),
                                     ("a * b * c", "((a * b) * c)"),
+                                    ("a * b / c", "((a * b) / c)"),
+                                    ("a + b / c", "((a + (b / c)"),
                                     ];
                 // compare the result of parseing the first element of tuple
                 // with second, third elements.
@@ -378,8 +385,62 @@ mod testing {
                     let lexer = Lexer::new(test);
                     let mut parser = Parser::new(lexer);
                     let program = parser.parse_program();
-                    println!("{:?}", program);
+//                    println!("{:?}", program.statements[0]);
                     assert_eq!(program.statements.len(), 1); // confirm the number of statements is 1.
                     }
                 }
+                #[test]
+                fn test_bool_expression() {
+                    let bool_tests = vec![
+                                        ("true", true),
+                                        ("false", false),
+//                                        ("3 > 5 == false", "((3 > 5) == false)"),
+//                                        ("3 < 5 == true", "((3 < 5) == true)"),
+                                        ];
+                    // compare the result of parseing the first element of tuple
+                    // with second, third elements.
+                    for (test, right) in bool_tests.iter() {
+                        let lexer = Lexer::new(test);
+                        let mut parser = Parser::new(lexer);
+                        let program = parser.parse_program();
+//                        println!("{:?}", program);
+                        assert_eq!(program.statements.len(), 1); // confirm the number of statements is 1.
+                        let test_bool = Statement::ExpressionStatement(
+                            ExpressionStatement{
+                                expression: Expression::Bool
+                                    (Bool{value: *right
+                                         }
+                                    )
+                                }
+                            );
+                        assert_eq!(program.statements[0], test_bool);
+                        }
+                    }    
+                    #[test]
+                    fn test_bool_infix_expression() {
+                        let bool_tests = vec![
+                                            ("3 > 5 == false", 3, ">", 5, "==", "false"),
+                                            ("3 > 5 == false", 3, "<", 5, "==", "true"),
+                                            ];
+                        // compare the result of parseing the first element of tuple
+                        // with second, third elements.
+                        for (test, left, operator, right, bool_ident, bool_literal) in bool_tests.iter() {
+                            let lexer = Lexer::new(test);
+                            let mut parser = Parser::new(lexer);
+                            let program = parser.parse_program();
+                            println!("{:?}", program.statements[0]);
+//                            assert_eq!(program.statements.len(), 1); // confirm the number of statements is 1.
+//                            let test_bool = Statement::ExpressionStatement(
+//                                ExpressionStatement{expression: Expression::InfixExpression(
+//                                InfixExpression{left_expression: Box::new(Expression::Integer(Integer{value: left.to_string()})),
+//                                                operator: operator.to_string(),
+//                                                right_expression: Box::new(Expression::Integer(Integer{value: right.to_string()}))
+//                                                }
+//                                            ),
+//                            
+//                                        }
+//                                    );        
+//                            assert_eq!(program.statements[0], test_bool);
+                            }
+                        }    
             }
