@@ -362,4 +362,24 @@ mod testing {
                     assert_eq!(program.statements[0], test_infix);
                     }
                 }
+
+            #[test]
+            fn test_operator_precedence_parsing() {
+                let infix_tests = vec![
+                                    ("-a *b", "((-a) * b)"),
+                                    ("!-a", "(!(-a))"),
+                                    ("a + b + c", "((a + b) + c)"),
+                                    ("a + b - c", "((a + b) - c)"),
+                                    ("a * b * c", "((a * b) * c)"),
+                                    ];
+                // compare the result of parseing the first element of tuple
+                // with second, third elements.
+                for (test, right) in infix_tests.iter() {
+                    let lexer = Lexer::new(test);
+                    let mut parser = Parser::new(lexer);
+                    let program = parser.parse_program();
+                    println!("{:?}", program);
+                    assert_eq!(program.statements.len(), 1); // confirm the number of statements is 1.
+                    }
+                }
             }
