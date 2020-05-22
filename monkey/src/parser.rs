@@ -185,16 +185,18 @@ impl<'a>  Parser<'a>  {
         }
         self.next_token();
         let condition = self.parse_expression(Precedence::LOWEST);
-        if !self.is_next_token(TokenKind::RPAREN) {
+        if !self.expect_next_token(TokenKind::RPAREN) {
             println!("TokenKind should be RPAREN but actually is {:?}",self.next_token.token_type)
         }
-        if !self.is_next_token(TokenKind::LBRACE) {
+        if !self.expect_next_token(TokenKind::LBRACE) {
             println!("TokenKind should be LBRACE but actually is {:?}",self.next_token.token_type)
         }
+
+
         let expression = IfExpression{
                             condition: Box::new(condition?),
                             consequence: Box::new(self.parse_block_statements(TokenKind::LBRACE)?),
-                            alternative: Box::new(self.parse_block_statements(TokenKind::LBRACE)?),                           
+                            alternative: Box::new(self.alternative()?),                           
         };
         Ok(expression)
     }
@@ -203,14 +205,25 @@ impl<'a>  Parser<'a>  {
         self.next_token();
         let mut statements: Vec<Statement> = vec![];
         while !self.is_current_token(TokenKind::RBRACE) && !self.is_current_token(TokenKind::EOF) {
-            println!("cur {:?}", self.current_token);
             let statement = self.parse_statement()?;
-            println!("stmt is {:?}", statement);
             statements.push(statement);
             self.next_token();
         }
         Ok(Statement::Block(statements))
     }
+
+    fn alternative(&mut self) -> Result<Statement, Errors> {
+        if self.is_next_token(TokenKind::ELSE) {
+        self.next_token();
+        if self.expect_next_token(TokenKind::LBRACE) {
+            Ok(self.parse_block_statements(TokenKind::LBRACE))?
+        }else {
+            return Err(Errors::TokenInvalid(self.current_token.clone()))
+        }
+    } else {
+        return Err(Errors::TokenInvalid(self.current_token.clone()))
+    }
+}
 
     fn parse_prefix_expression(&mut self) -> Result<PrefixExpression, Errors> {
         let current_token = self.current_token.literal.to_string();
@@ -282,8 +295,10 @@ mod testing {
     use crate::ast::ReturnStatement;
     use crate::lexer::Lexer;
     use crate::token::TokenKind;
+    use crate::ast::Statement::Block;
     use crate::ast::Statement;
     use crate::ast::Expression;
+    use crate::ast::IfExpression;
     use crate::ast::ExpressionStatement;
     use crate::ast::LetStatement;
     use crate::ast::Identifier;
@@ -495,11 +510,11 @@ mod testing {
                             }
                         }    
             #[test]
-            fn test_expression() {
-                let input = "if (x < y) {x}".to_string();
+            fn test_if_expression() {
+                let input = "if (x < y) {x} else {y}".to_string();
                 let lexer = Lexer::new(&input);
                 let mut parser = Parser::new(lexer);
-                let program = parser.parse_program();
-//                println!("{:?}", program);
+                let program = parser.parse_program().unwrap();
+                println!("{:?}", program.statements[0]);
                 }
 }
