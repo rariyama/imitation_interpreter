@@ -17,7 +17,8 @@ pub struct Program {
 pub enum Statement {
     LetStatement(LetStatement),
     ReturnStatement(ReturnStatement),
-    ExpressionStatement(ExpressionStatement)
+    ExpressionStatement(ExpressionStatement),
+    Block(Vec<Statement>)
 }
 
 #[derive(Debug,PartialEq)]
@@ -72,9 +73,11 @@ pub struct ExpressionStatement {
 pub enum Expression {
     Identifier(Identifier),
     Integer(Integer),
+    LParen(LParen),
     Bool(Bool),
     PrefixExpression(PrefixExpression),
-    InfixExpression(InfixExpression)
+    InfixExpression(InfixExpression),
+    IfExpression(IfExpression)
 }
 
 #[derive(Debug,PartialEq)]
@@ -84,6 +87,11 @@ pub struct Identifier {
 
 #[derive(Debug,PartialEq)]
 pub struct Integer {
+    pub value: String
+}
+
+#[derive(Debug,PartialEq)]
+pub struct LParen {
     pub value: String
 }
 
@@ -103,6 +111,18 @@ pub struct InfixExpression {
     pub left_expression: Box<Expression>,
     pub operator: String,
     pub right_expression: Box<Expression>
+}
+
+#[derive(Debug,PartialEq)]
+pub struct IfExpression {
+    pub condition: Box<Expression>,
+    pub consequence: Box<Statement>,
+    pub alternative: Box<Statement>
+}
+
+#[derive(Debug,PartialEq)]
+pub struct BlockStatement {
+    pub statements: Vec<Statement>
 }
 
 #[derive(Debug, PartialEq, PartialOrd)]

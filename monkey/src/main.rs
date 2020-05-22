@@ -3,6 +3,7 @@ mod repl;
 mod token;
 mod parser;
 mod ast;
+mod errors;
 
 fn main() {
     println!("Hello, world!");
