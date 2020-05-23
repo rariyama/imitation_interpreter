@@ -27,7 +27,7 @@ impl<'a>  Parser<'a>  {
         p
     }
 
-    fn next_token(&mut self) {
+    pub fn next_token(&mut self) {
         self.current_token = self.next_token.clone(); //借用権問題でcloneする。
         self.next_token = self.lexer.next_token();
     }
