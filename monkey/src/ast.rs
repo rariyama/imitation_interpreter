@@ -18,7 +18,8 @@ pub enum Statement {
     LetStatement(LetStatement),
     ReturnStatement(ReturnStatement),
     ExpressionStatement(ExpressionStatement),
-    Block(Vec<Statement>)
+    Block(Vec<Statement>),
+    Parameter(Vec<Statement>)
 }
 
 #[derive(Debug,PartialEq)]
@@ -77,7 +78,8 @@ pub enum Expression {
     Bool(Bool),
     PrefixExpression(PrefixExpression),
     InfixExpression(InfixExpression),
-    IfExpression(IfExpression)
+    IfExpression(IfExpression),
+    FunctionLiteral(FunctionLiteral)
 }
 
 #[derive(Debug,PartialEq)]
@@ -118,6 +120,12 @@ pub struct IfExpression {
     pub condition: Box<Expression>,
     pub consequence: Box<Statement>,
     pub alternative: Box<Statement>
+}
+
+#[derive(Debug,PartialEq)]
+pub struct FunctionLiteral {
+    pub parameters: Box<Statement>,
+    pub body: Box<Statement>,
 }
 
 #[derive(Debug,PartialEq)]

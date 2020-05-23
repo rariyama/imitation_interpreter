@@ -4,7 +4,7 @@ use super::errors::{Errors};
 use super::ast::{Program, Statement, LetStatement, ReturnStatement, 
                  Expression, ExpressionStatement, Precedence,
                  Identifier, Integer, Bool,LParen, IfExpression,
-                 PrefixExpression, InfixExpression};
+                 FunctionLiteral, PrefixExpression, InfixExpression};
 
 #[derive(Debug, Clone)]
 pub struct Parser<'a>  {
@@ -111,6 +111,7 @@ impl<'a>  Parser<'a>  {
             TokenKind::TRUE => Expression::Bool(Bool{value: true}),
             TokenKind::FALSE => Expression::Bool(Bool{value: false}),
             TokenKind::IF => Expression::IfExpression(self.parse_if_expression()?),
+            TokenKind::FUNCTION => Expression::FunctionLiteral(self.parse_function_expression()?),
             TokenKind::BANG => Expression::PrefixExpression(self.parse_prefix_expression()?),
             TokenKind::MINUS => Expression::PrefixExpression(self.parse_prefix_expression()?),
             TokenKind::LPAREN => self.parse_grouped_expression()?,
@@ -222,8 +223,47 @@ impl<'a>  Parser<'a>  {
         }
     } else {
         return Err(Errors::TokenInvalid(self.current_token.clone()))
+        }
     }
-}
+
+    fn parse_function_expression(&mut self) -> Result<FunctionLiteral, Errors> {
+        if self.expect_next_token(TokenKind::LPAREN) {
+            println!("TokenKind should be LPAREN but actually is {:?}",self.next_token.token_type)            
+        }
+        let parameters = self.parse_function_parameters()?;
+        println!("{:?}", parameters);
+        if self.expect_next_token(TokenKind::LBRACE) {
+            println!("TokenKind should be LBRACE but actually is {:?}",self.next_token.token_type)            
+        }        
+
+        let body = self.parse_block_statements(TokenKind::LBRACE)?;
+        let expression = FunctionLiteral{
+            parameters: Box::new(parameters),
+            body: Box::new(body)
+        };
+        Ok(expression)
+    }
+
+    fn parse_function_parameters(&mut self) -> Result<Statement, Errors> {
+        let mut statement: Vec<Statement> = vec![];
+        if self.is_next_token(TokenKind::RPAREN) {
+            self.next_token();
+            return Ok(Statement::Parameter(statement))
+        }
+        self.next_token();
+        statement.push(self.parse_statement()?);
+
+        while self.is_next_token(TokenKind::COMMA) {
+            self.next_token();
+            self.next_token();
+            statement.push(self.parse_statement()?);
+        }
+        if !self.expect_next_token(TokenKind::RPAREN) {
+            panic!()
+        }
+        Ok(Statement::Parameter(statement))
+    }
+
 
     fn parse_prefix_expression(&mut self) -> Result<PrefixExpression, Errors> {
         let current_token = self.current_token.literal.to_string();
@@ -517,4 +557,14 @@ mod testing {
                 let program = parser.parse_program().unwrap();
                 println!("{:?}", program.statements[0]);
                 }
-}
+
+            #[test]
+            fn test_function_expression() {
+                let input = "fn (x, y) {x + y;}".to_string();
+                let lexer = Lexer::new(&input);
+                let mut parser = Parser::new(lexer);
+                let program = parser.parse_program().unwrap();
+                println!("{:?}", program.statements[0]);
+                }
+
+            }
