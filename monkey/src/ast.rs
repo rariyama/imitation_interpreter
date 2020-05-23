@@ -25,35 +25,35 @@ pub enum Statement {
 
 #[derive(Debug,PartialEq)]
 pub struct LetStatement {
-    pub identifier: Identifier
+    pub identifier: Expression
 }
 
-impl LetStatement {
-    pub fn string(&mut self) -> String {
-        if self.identifier.value.len() != 0 {
-            let mut statement = "let ".to_string() + &self.identifier.value.to_string() + ";";
-            return statement
-        } else {
-            return "".to_string()
-        }
-    }
-}
+//impl LetStatement {
+//    pub fn string(&mut self) -> String {
+//        if self.identifier.value.len() != 0 {
+//            let mut statement = "let ".to_string() + &self.identifier.value.to_string() + ";";
+//            return statement
+//        } else {
+//            return "".to_string()
+//        }
+//    }
+//}
 
 #[derive(Debug,PartialEq)]
 pub struct ReturnStatement {
-    pub identifier: Identifier
+    pub identifier: Expression
 }
 
-impl ReturnStatement {
-    pub fn string(&mut self) -> String {
-        if self.identifier.value.len() != 0 {
-            let mut statement = "return ".to_string()+ &self.identifier.value.to_string() + ";";
-            return statement
-        } else {
-            return "return; ".to_string()            
-        }
-    }
-}
+//impl ReturnStatement {
+//    pub fn string(&mut self) -> String {
+//        if self.identifier.value.len() != 0 {
+//            let mut statement = "return ".to_string()+ &self.identifier.value.to_string() + ";";
+//            return statement
+//        } else {
+//            return "return; ".to_string()            
+//        }
+//    }
+//}
 
 #[derive(Debug,PartialEq)]
 pub struct ExpressionStatement {
