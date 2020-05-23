@@ -91,6 +91,7 @@ impl Token {
             TokenKind::MINUS => Precedence::SUM,
             TokenKind::SLASH => Precedence::PRODUCT,
             TokenKind::ASTERISK => Precedence::PRODUCT,
+            TokenKind::LPAREN => Precedence::CALL,
             _                   => Precedence::LOWEST
         }
     }

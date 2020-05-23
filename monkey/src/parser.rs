@@ -4,7 +4,8 @@ use super::errors::{Errors};
 use super::ast::{Program, Statement, LetStatement, ReturnStatement, 
                  Expression, ExpressionStatement, Precedence,
                  Identifier, Integer, Bool,LParen, IfExpression,
-                 FunctionLiteral, PrefixExpression, InfixExpression};
+                 FunctionLiteral, PrefixExpression, InfixExpression,
+                 CallExpression};
 
 #[derive(Debug, Clone)]
 pub struct Parser<'a>  {
@@ -16,7 +17,6 @@ pub struct Parser<'a>  {
 impl<'a>  Parser<'a>  {
     pub fn new(l: lexer::Lexer<'a>) -> Self {
         // Goだと初期化時に省略するが、rustではできないためはじめにやる。
-
         let mut p = Parser{
             lexer: l,
             current_token: Token{token_type: TokenKind::DEFAULT, literal: "default".to_string() },
@@ -111,10 +111,10 @@ impl<'a>  Parser<'a>  {
             TokenKind::TRUE => Expression::Bool(Bool{value: true}),
             TokenKind::FALSE => Expression::Bool(Bool{value: false}),
             TokenKind::IF => Expression::IfExpression(self.parse_if_expression()?),
+            TokenKind::LPAREN => self.parse_grouped_expression()?,
             TokenKind::FUNCTION => Expression::FunctionLiteral(self.parse_function_expression()?),
             TokenKind::BANG => Expression::PrefixExpression(self.parse_prefix_expression()?),
             TokenKind::MINUS => Expression::PrefixExpression(self.parse_prefix_expression()?),
-            TokenKind::LPAREN => self.parse_grouped_expression()?,
             _ => return Err(Errors::TokenInvalid(self.current_token.clone()))
         };
         while !self.is_next_token(TokenKind::SEMICOLON) && precedence < self.next_precedence() {
@@ -153,6 +153,10 @@ impl<'a>  Parser<'a>  {
                     self.next_token();
                     exp =  self.parse_infix_expression(exp)?;
                 },
+                TokenKind::LPAREN => {
+                    self.next_token();
+                    exp =  self.parse_call_arguments(exp)?;
+                },
                 _ => {
                     return Ok(exp);                
                 }
@@ -170,14 +174,13 @@ impl<'a>  Parser<'a>  {
     }
 
     fn parse_grouped_expression(&mut self) -> Result<Expression, Errors> {
-        let current_token = self.current_token.literal.to_string();
         self.next_token();
         let lparen = self.parse_expression(Precedence::LOWEST)?;
         if self.expect_next_token(TokenKind::RPAREN) {
              return Ok(lparen)
-        } else {
-            panic!()
-        }  
+        }  else {
+            Err(Errors::TokenInvalid(self.current_token.clone()))
+        }
 }
 
     fn parse_if_expression(&mut self) ->  Result<IfExpression, Errors> {
@@ -264,6 +267,27 @@ impl<'a>  Parser<'a>  {
         Ok(Statement::Parameter(statement))
     }
 
+    fn parse_call_arguments(&mut self, func: Expression) -> Result<Expression, Errors> {
+        let mut arguments = vec![];
+        if self.is_next_token(TokenKind::RPAREN) {
+            self.next_token();
+        } else {
+        self.next_token();
+        arguments.push(self.parse_expression(Precedence::LOWEST)?);
+        while self.is_next_token(TokenKind::COMMA) {
+            self.next_token();
+            self.next_token();
+            arguments.push(self.parse_expression(Precedence::LOWEST)?);
+        }
+        if !self.expect_next_token(TokenKind::RPAREN) {
+            panic!()
+        }
+            }
+        let call_arguments = CallExpression{function: Box::new(func),
+                                            body: arguments
+                                            };
+        Ok(Expression::CallExpression(call_arguments))
+    }
 
     fn parse_prefix_expression(&mut self) -> Result<PrefixExpression, Errors> {
         let current_token = self.current_token.literal.to_string();
@@ -319,13 +343,13 @@ impl<'a>  Parser<'a>  {
     }
 
     fn expect_next_token(&mut self, token_kind: TokenKind) -> bool {
-        let expect_token = self.is_next_token(token_kind);
-        if expect_token {
+        if self.is_next_token(token_kind){
             self.next_token();
+            return true
         } else {
-            println!("expect_token is {:?} but accually got {:?}", token_kind, self.next_token.token_type);
+            println!("expect_token is {:?} but actually got {:?}", token_kind, self.next_token.token_type);
+            return false
         }
-        expect_token
     }
 }
 
@@ -534,7 +558,6 @@ mod testing {
                             let lexer = Lexer::new(test);
                             let mut parser = Parser::new(lexer);
                             let program = parser.parse_program();
-//                            println!("{:?}", program.statements[0]);
 //                            assert_eq!(program.statements.len(), 1); // confirm the number of statements is 1.
 //                            let test_bool = Statement::ExpressionStatement(
 //                                ExpressionStatement{expression: Expression::InfixExpression(
@@ -567,4 +590,12 @@ mod testing {
                 println!("{:?}", program.statements[0]);
                 }
 
+            #[test]
+            fn test_call_expression() {
+                let input = "add(1, 2 * 3, 4 + 5);".to_string();
+                let lexer = Lexer::new(&input);
+                let mut parser = Parser::new(lexer);
+                let program = parser.parse_program().unwrap();
+                println!("{:?}", program.statements[0]);
+                }
             }
