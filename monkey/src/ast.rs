@@ -1,8 +1,5 @@
 use std::fmt;
 
-use super::lexer;
-use super::token::{Token};
-
 
 pub trait Node {
     fn token_literal(&self) -> String;
@@ -15,7 +12,8 @@ pub struct Program {
 
 #[derive(Debug,PartialEq)]
 pub enum Statement {
-    LetStatement(LetStatement),
+    LetStatement{identifier: Expression,
+                 value: Expression},
     ReturnStatement(ReturnStatement),
     ExpressionStatement(ExpressionStatement),
     Block(Vec<Statement>),
@@ -23,10 +21,32 @@ pub enum Statement {
     Arguments(Vec<Statement>),
 }
 
-#[derive(Debug,PartialEq)]
-pub struct LetStatement {
-    pub identifier: Expression
-}
+//impl fmt::Display for Statement {
+//    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//        match self {
+//            Statement::LetStatement(
+//                           LetStatement{
+//                               identifier: Expression::Identifier(
+//                                                           Identifier{value}
+//                                                    )
+//                                        }) =>write!(f, "let {};", value),
+//            Statement::ReturnStatement(
+//                ReturnStatement{
+//                    identifier: Expression::Identifier(
+//                                                Identifier{value}
+//                                         )
+//                             }) =>write!(f, "return {};", value),
+//            Statement::ExpressionStatement(
+//                ExpressionStatement{
+//                   expression: Expression::Identifier(
+//                                               Identifier{value}
+//                                        )
+//                            }) =>write!(f, "{};", value),
+//        _ => write!(f, "none")
+//                    }
+//                }
+//            }
+
 
 #[derive(Debug,PartialEq)]
 pub struct ReturnStatement {
@@ -58,7 +78,7 @@ pub struct Identifier {
 
 #[derive(Debug,PartialEq)]
 pub struct Integer {
-    pub value: String
+    pub value: i32
 }
 
 #[derive(Debug,PartialEq)]
