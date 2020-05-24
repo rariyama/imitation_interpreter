@@ -1,11 +1,10 @@
 use super::token::{Token, TokenKind};
 use super::lexer;
 use super::errors::{Errors};
-use super::ast::{Program, Statement, Statement::LetStatement, ReturnStatement,
-                 Expression, ExpressionStatement, Precedence,
-                 Identifier, Integer, Bool, IfExpression,
-                 FunctionLiteral, PrefixExpression, InfixExpression,
-                 CallExpression};
+use super::ast::{Program, Statement, Statement::LetStatement,
+                 Expression, Precedence,Identifier, Integer,
+                 Bool, IfExpression, FunctionLiteral, PrefixExpression,
+                 InfixExpression, CallExpression};
 
 #[derive(Debug, Clone)]
 pub struct Parser<'a>  {
@@ -51,10 +50,10 @@ impl<'a>  Parser<'a>  {
                 Ok((self.parse_let_statement()?))
             },
             TokenKind::RETURN => {
-                Ok(Statement::ReturnStatement(self.parse_return_statement()?))
+                Ok(self.parse_return_statement()?)
             },
             _ => {
-                Ok(Statement::ExpressionStatement(self.parse_expression_statement()?))
+                Ok(self.parse_expression_statement()?)
             }
         }
     }
@@ -86,26 +85,23 @@ impl<'a>  Parser<'a>  {
         return Ok(stmt)
     }
 
-    fn parse_return_statement(&mut self) -> Result<ReturnStatement, Errors> {
+    fn parse_return_statement(&mut self) -> Result<Statement, Errors> {
         self.next_token();
         let return_value = self.parse_expression(Precedence::LOWEST)?;
 
-        let stmt = ReturnStatement {
-            identifier: return_value
-        };
         // セミコロンまでの読み飛ばしをしてからstatementを定義して返す。
         while !self.is_current_token(TokenKind::SEMICOLON) {
             self.next_token()
         }
-        return Ok(stmt)
+        return Ok(Statement::Return(return_value))
     }
 
-    fn parse_expression_statement(&mut self) -> Result<ExpressionStatement, Errors> {
+    fn parse_expression_statement(&mut self) -> Result<Statement, Errors> {
         let expression = self.parse_expression(Precedence::LOWEST)?;
         if self.is_next_token(TokenKind::SEMICOLON) {
             self.next_token()
         }
-        return Ok(ExpressionStatement{expression: expression})
+        return Ok(Statement::ExpressionStatement(expression))
     }
 
     fn parse_expression(&mut self, precedence: Precedence) -> Result<Expression, Errors> {
@@ -360,14 +356,12 @@ impl<'a>  Parser<'a>  {
 // if cfg(test) is written, test code is compiled only when test runs
 #[cfg(test)]// test runs only when execute cargo run
 mod testing {
-    use crate::ast::ReturnStatement;
     use crate::lexer::Lexer;
     use crate::token::TokenKind;
     use crate::ast::Statement::Block;
     use crate::ast::Statement;
     use crate::ast::Expression;
     use crate::ast::IfExpression;
-    use crate::ast::ExpressionStatement;
     use crate::ast::Identifier;
     use crate::ast::Integer;
     use crate::ast::Bool;
@@ -384,8 +378,8 @@ mod testing {
         let lexer = Lexer::new(&input);
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
-//        let stmt = format!("{}", &program.statements[0]);
-//        println!("{:?}", stmt);
+        let stmt = format!("{}", &program.statements[0]);
+        println!("{}", stmt);
         assert_eq!(program.statements.len(), 3);
 //
         let tests = vec![
@@ -412,18 +406,18 @@ mod testing {
         let lexer = Lexer::new(&input);
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
-        println!("{:?}", program);
-        assert_eq!(program.statements.len(), 3);
 
+        assert_eq!(program.statements.len(), 3);
         let tests = vec![
-            "5",
-            "10",
-            "993322",
+            "return 5",
+            "return 10",
+            "return 993322",
         ];
 
         for (i, test) in tests.iter().enumerate() {
-            let stmt = &program.statements[i];
-//            assert_eq!(stmt, &Statement::ReturnStatement(ReturnStatement{identifier: Identifier{value: test.to_string()}}));
+            let stmt = format!("{}", &program.statements[i]);
+            println!("{}", stmt);
+            assert_eq!(*stmt, **test);
         }
     }
     #[test]
@@ -434,99 +428,70 @@ mod testing {
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
         assert_eq!(program.statements.len(), 1); // 識別子が一つであること
-        let test_ident = Statement::ExpressionStatement(ExpressionStatement{expression: Expression::Identifier(Identifier{value: "foobar".to_string()})});
-        assert_eq!(program.statements[0], test_ident)
+        let stmt = format!("{}", program.statements[0]);
+        assert_eq!(stmt, "foobar");
         }
 
         #[test]
         fn test_interger_expression() {
-            let input = "5;".to_string();
+            let input = "5".to_string();
             
             let lexer = Lexer::new(&input);
             let mut parser = Parser::new(lexer);
             let program = parser.parse_program().unwrap();
             assert_eq!(program.statements.len(), 1); // confirm the number of statements is 1.
-            let test_ident = Statement::ExpressionStatement(ExpressionStatement{expression: Expression::Integer(Integer{value: 5})});
-            assert_eq!(program.statements[0], test_ident)
+            let stmt = format!("{}", program.statements[0]);
+            assert_eq!(stmt, "5".to_string());
             }
 
         #[test]
         fn test_prefix_expression() {
-            let prefix_tests = vec![
-                                ("!5", "!", 5),
-                                ("-15", "-", 15)
-                                   ];
+            let prefix_tests = vec!["!5","-15"];
             // compare the result of parseing the first element of tuple
             // with second, third elements.
-            for (test, left, right) in prefix_tests.iter() {
+            for test in prefix_tests.iter() {
                 let lexer = Lexer::new(test);
                 let mut parser = Parser::new(lexer);
                 let program = parser.parse_program().unwrap();
                 assert_eq!(program.statements.len(), 1); // confirm the number of statements is 1.
-//                let test_prefix = Statement::ExpressionStatement(ExpressionStatement{expression: Expression::PrefixExpression(
-//                PrefixExpression{operator: left.to_string(), right_expression: Box::new(Expression::Integer(Integer{value: right.to_string()}))}
-//            )});
-//                assert_eq!(program.statements[0], test_prefix);
+                let statements = format!("{}", program.statements[0]);
+                for (i, statement) in prefix_tests.iter().enumerate() {
+                    assert_eq!(*statement, prefix_tests[i]);
                 }
             }
+        }
 
             #[test]
             fn test_infix_expression() {
-                let infix_tests = vec![
-                                    ("5 + 5;", 5, "+", 5),
-                                    ("5 - 5;", 5, "-", 5),
-                                    ("5 * 5;", 5, "*", 5),
-                                    ("5 / 5;", 5, "/", 5),
-                                    ("5 > 5;", 5, ">", 5),
-                                    ("5 < 5;", 5, "<", 5),
-                                    ("5 == 5;", 5, "==", 5),
-                                    ("5 != 5;", 5, "!=", 5),
-                                    ];
+                let infix_tests = vec!["5 + 5;", "5 - 5;", "5 * 5;", "5 / 5;",
+                                       "5 > 5;", "5 < 5;", "5 == 5;", "5 != 5;"];
                 // compare the result of parseing the first element of tuple
                 // with second, third elements.
-                for (test, left, middle, right) in infix_tests.iter() {
+                for test in infix_tests.iter() {
                     let lexer = Lexer::new(test);
                     let mut parser = Parser::new(lexer);
                     let program = parser.parse_program().unwrap();
                     assert_eq!(program.statements.len(), 1); // confirm the number of statements is 1.
-//                    let test_infix = Statement::ExpressionStatement(
-//                        ExpressionStatement{expression: Expression::InfixExpression(
-//                        InfixExpression{left_expression: Box::new(Expression::Integer(Integer{value: left.to_string()})),
-//                                        operator: middle.to_string(),
-//                                        right_expression: Box::new(Expression::Integer(Integer{value: right.to_string()}))
-//                                        }
-//                                    )
-//                                }
-//                            );
-//                    assert_eq!(program.statements[0], test_infix);
+                    let statements = format!("{}", program.statements[0]);
+                    for (i, statement) in infix_tests.iter().enumerate() {
+                        assert_eq!(*statement, infix_tests[i]);
                     }
                 }
+            }
 
             #[test]
             fn test_operator_precedence_parsing() {
-                let infix_tests = vec![
-//                                    ("-a *b", "((-a) * b)"),
-//                                    ("!-a", "(!(-a))"),
-//                                    ("a + b + c", "((a + b) + c)"),
-//                                    ("a + b - c", "((a + b) - c)"),
-//                                    ("a * b * c", "((a * b) * c)"),
-//                                    ("a * b / c", "((a * b) / c)"),
-//                                    ("a + b / c", "((a + (b / c)"),
-                                    ("1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4"),
-                                    ("(5 + 5) * 2", "((5 + 5) * 2)"),
-                                      ("2 / (5 + 5)", "(2 / (5 + 5))"),
-                                    ("-(5 + 5)", "(-(5 + 5))"),
-                                    ("!(true == true)", "(!(true == true))"),
-                                    ];
+                let infix_tests = vec!["((-a) * b)", "(!(-a))", "((a + b) + c)",  "((a + b) - c)", "((a * b) * c)",
+                                       "((a * b) / c)",  "(a + (b / c))", "(1 + (2 + 3)) + 4", "((5 + 5) * 2)",
+                                       "(2 / (5 + 5))", "(-(5 + 5))", "(!(true == true))"
+                                      ];
                 // compare the result of parseing the first element of tuple
                 // with second, third elements.
-                for (test, before) in infix_tests.iter() {
+                for (i, test) in infix_tests.iter().enumerate() {
                     let lexer = Lexer::new(test);
                     let mut parser = Parser::new(lexer);
                     let program = parser.parse_program().unwrap();
-                    println!("{:?}", program.statements[0]);
-//                    assert_eq!(program.statements.len(), 1); // confirm the number of statements is 1.
-//                    eprint!("{:?}", program.statements[0]);
+                    let statements = format!("{}", program.statements[0]);
                 }
                 }
                 #[test]
@@ -545,15 +510,15 @@ mod testing {
                         let program = parser.parse_program().unwrap();
 //                        println!("{:?}", program);
                         assert_eq!(program.statements.len(), 1); // confirm the number of statements is 1.
-                        let test_bool = Statement::ExpressionStatement(
-                            ExpressionStatement{
-                                expression: Expression::Bool
-                                    (Bool{value: *right
-                                         }
-                                    )
-                                }
-                            );
-                        assert_eq!(program.statements[0], test_bool);
+//                        let test_bool = Statement::ExpressionStatement(
+//                            ExpressionStatement{
+//                                expression: Expression::Bool
+//                                    (Bool{value: *right
+//                                         }
+//                                    )
+//                                }
+//                            );
+//                        assert_eq!(program.statements[0], test_bool);
                         }
                     }    
                     #[test]

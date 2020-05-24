@@ -14,49 +14,46 @@ pub struct Program {
 pub enum Statement {
     LetStatement{identifier: Expression,
                  value: Expression},
-    ReturnStatement(ReturnStatement),
-    ExpressionStatement(ExpressionStatement),
+    Return(Expression),
+    ExpressionStatement(Expression),
     Block(Vec<Statement>),
     Parameter(Vec<Statement>),
     Arguments(Vec<Statement>),
 }
 
-//impl fmt::Display for Statement {
-//    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//        match self {
-//            Statement::LetStatement(
-//                           LetStatement{
-//                               identifier: Expression::Identifier(
-//                                                           Identifier{value}
-//                                                    )
-//                                        }) =>write!(f, "let {};", value),
-//            Statement::ReturnStatement(
-//                ReturnStatement{
-//                    identifier: Expression::Identifier(
-//                                                Identifier{value}
-//                                         )
-//                             }) =>write!(f, "return {};", value),
-//            Statement::ExpressionStatement(
-//                ExpressionStatement{
-//                   expression: Expression::Identifier(
-//                                               Identifier{value}
-//                                        )
-//                            }) =>write!(f, "{};", value),
-//        _ => write!(f, "none")
-//                    }
-//                }
-//            }
-
-
-#[derive(Debug,PartialEq)]
-pub struct ReturnStatement {
-    pub identifier: Expression
-}
-
-#[derive(Debug,PartialEq)]
-pub struct ExpressionStatement {
-    pub expression: Expression
-}
+impl fmt::Display for Statement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Statement::LetStatement{
+                               identifier, value
+                                        } =>write!(f, "let {} = {};",identifier,  value),
+            Statement::Return(Expression) =>write!(f, "return {}", Expression),
+            Statement::ExpressionStatement(Expression) =>write!(f, "{}", Expression),
+            Statement::Block(Statements) => {
+                                             for stmt in Statements.iter()
+                                                 {
+                                                  write!(f, "{}", stmt)?;
+                                                 }
+                                            Ok(())  
+                                            },
+            Statement::Parameter(Statements) => {
+                for stmt in Statements.iter()
+                    {
+                     write!(f, "{}", stmt)?;
+                    }
+               Ok(())  
+               },
+            Statement::Arguments(Statements) => {
+             for stmt in Statements.iter()
+                 {
+                  write!(f, "{}", stmt)?;
+                 }
+            Ok(())  
+            },
+           _ => write!(f, "none")
+                    }
+                }
+            }
 
 #[derive(Debug,PartialEq)]
 pub enum Expression {
@@ -69,6 +66,22 @@ pub enum Expression {
     IfExpression(IfExpression),
     FunctionLiteral(FunctionLiteral),
     CallExpression(CallExpression)
+}
+
+impl fmt::Display for Expression {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Expression::Identifier(Identifier{value}) => write!(f, "{}",&value),
+            Expression::Integer(Integer{value}) => write!(f, "{}",value),
+            Expression::LParen(LParen{value}) => write!(f, "{}",value),
+            Expression::Bool(Bool{value}) => write!(f, "{}",value),
+            Expression::PrefixExpression(PrefixExpression{operator,right_expression}) => write!(f, "{}{}",operator, right_expression),
+            Expression::InfixExpression(InfixExpression{left_expression,operator,right_expression}) => write!(f, "{} {} {}",left_expression, operator, right_expression),
+            Expression::IfExpression(IfExpression{condition, consequence, alternative}) => write!(f, "{} {} {}",condition, consequence, alternative),
+            Expression::FunctionLiteral(FunctionLiteral{parameters, body}) => write!(f, "{} {} ",parameters, body),
+            Expression::CallExpression(CallExpression{function, body}) => write!(f, "{} {:?} ",function, body),
+        }
+    }
 }
 
 #[derive(Debug,PartialEq)]
