@@ -179,8 +179,6 @@ pub    fn is_digit(ch: &u8) -> bool {
 mod testing {
     use crate::lexer::Lexer;
     use crate::token::TokenKind;
-//    use lexer::Lexer;//if you need to refer the code inside this file, you can use 'super'
-//    use token::TokenKind;
 
     #[test]
     fn test_next_token() {

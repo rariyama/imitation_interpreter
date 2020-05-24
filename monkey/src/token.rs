@@ -43,8 +43,6 @@ pub enum TokenKind {
 }
 
 pub fn get_keyword(ident: &str) -> TokenKind {
-//    let _let = "let".to_string();
-//    let _fn = "fn".to_string();
     match ident {
         "let" => {
             TokenKind::LET

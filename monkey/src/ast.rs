@@ -28,48 +28,15 @@ pub struct LetStatement {
     pub identifier: Expression
 }
 
-//impl LetStatement {
-//    pub fn string(&mut self) -> String {
-//        if self.identifier.value.len() != 0 {
-//            let mut statement = "let ".to_string() + &self.identifier.value.to_string() + ";";
-//            return statement
-//        } else {
-//            return "".to_string()
-//        }
-//    }
-//}
-
 #[derive(Debug,PartialEq)]
 pub struct ReturnStatement {
     pub identifier: Expression
 }
 
-//impl ReturnStatement {
-//    pub fn string(&mut self) -> String {
-//        if self.identifier.value.len() != 0 {
-//            let mut statement = "return ".to_string()+ &self.identifier.value.to_string() + ";";
-//            return statement
-//        } else {
-//            return "return; ".to_string()            
-//        }
-//    }
-//}
-
 #[derive(Debug,PartialEq)]
 pub struct ExpressionStatement {
     pub expression: Expression
 }
-
-//impl ExpressionStatement {
-//    pub fn string(&mut self) -> String{
-//        if self.expression.Expression.Identifier.value.len() != 0{
-//            return self.identifier.value.clone()
-//        }
-//        else {
-//            return "".to_string()
-//        }
-//    }
-//}
 
 #[derive(Debug,PartialEq)]
 pub enum Expression {
