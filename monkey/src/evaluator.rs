@@ -35,6 +35,7 @@ fn evaluate_expression(expression: &ast::Expression) -> Result<Object, Errors> {
 fn evaluate_prefix_expression(operator: &str, right: Object) -> Result<Object, Errors> {
     match operator {
         "!" => evaluate_bang_operation_expression(right),
+        "-" => evaluate_minus_prefix_operator_expression(right),
         _ => Ok(Object::Null)
     }
 }
@@ -45,6 +46,13 @@ fn evaluate_bang_operation_expression(right: Object) -> Result<Object, Errors> {
         Object::Boolean(false) => Ok(Object::Boolean(true)),
         Object::Boolean(Null) => Ok(Object::Boolean(true)),
         _ => Ok(Object::Boolean(false))
+    }
+}
+
+fn evaluate_minus_prefix_operator_expression(right: Object) -> Result<Object, Errors> {
+    match right {
+        Object::Integer(value) => Ok(Object::Integer(-value)),
+        _ =>Ok(Object::Null)
     }
 }
 
@@ -71,7 +79,9 @@ mod testing {
     fn test_eval_integer_expression() {
         let tests = vec![
                         ("5", 5),
-                        ("10", 10)
+                        ("10", 10),
+                        ("-5", -5),
+                        ("-10", -10)
                         ];
         for test in tests.iter() {
             let evaluated = test_evaluate(test.0);
