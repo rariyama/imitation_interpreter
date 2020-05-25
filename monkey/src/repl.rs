@@ -1,4 +1,4 @@
-use crate::{lexer, token, parser, ast, errors};
+use crate::{lexer, parser, ast, errors, evaluator, object};
 use std::io;
 use std::io::prelude::*;
 
@@ -28,22 +28,22 @@ pub fn start() {
         }
         
         let mut parser = parser::Parser::new(lexer);
-        let program = parser.parse_program();
+        let program = parser.parse_program().unwrap();
+        let evaluated = evaluator::evaluate(&program);
 
         // if input is invalid, display error message and retry.
-        if let Err(_error) = &program {
+        if let Err(_error) = &evaluated {
             println!("invalid syntax");
-            println!("{:?}", program);
+            println!("{:?}", evaluated);
             continue;
         }
 
         // if input is null, display nothing and retry.
-        let token = parser.next_token();
         if input.len() == 1 {
             continue;
         } else {
             // if correctly input, display parsed result.
-            println!("{:?}", program.unwrap());
+            println!("{}", evaluated.unwrap());
             }
         }
         }

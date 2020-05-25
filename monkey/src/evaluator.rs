@@ -4,7 +4,7 @@ use super::errors::{Errors};
 
 
 
-fn evaluate(program: &ast::Program) -> Result<object::Object, Errors> {
+pub fn evaluate(program: &ast::Program) -> Result<object::Object, Errors> {
     let mut result = object::Object::Default;
 
     for statement in program.statements.iter() {
