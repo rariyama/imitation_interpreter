@@ -23,6 +23,7 @@ fn evaluate_statement(statement: &ast::Statement) -> Result<object::Object, Erro
 fn evaluate_expression(expression: &ast::Expression) -> Result<object::Object, Errors> {
     match expression {
         ast::Expression::Integer(value) => Ok(object::Object::Integer(*value)),
+        ast::Expression::Bool(bool) => Ok(object::Object::Boolean(*bool)),
         _ =>  Err(Errors::NodeError)
     }
 }
@@ -56,6 +57,19 @@ mod testing {
             let evaluated = test_evaluate(test.0);
             let integer = format!("{}", evaluated);
             assert_eq!(integer.parse::<i32>().unwrap(), test.1)
+        }
+    }
+
+    #[test]
+    fn test_eval_boolean_expression() {
+        let tests = vec![
+                        ("true", true),
+                        ("false", false)
+                        ];
+        for test in tests.iter() {
+            let evaluated = test_evaluate(test.0);
+            let boolean = format!("{}", evaluated);
+            assert_eq!(FromStr::from_str(&boolean.to_string()[..]), Ok(test.1));
         }
     }
 

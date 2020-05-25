@@ -57,6 +57,7 @@ impl Integer {
     }
 }
 
+#[derive(Debug,PartialEq)]
 pub struct Boolean {
     value: bool
 }
@@ -70,6 +71,7 @@ impl Boolean {
     }
 }
 
+#[derive(Debug,PartialEq)]
 pub struct Null {
 }
 
