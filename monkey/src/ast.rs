@@ -1,10 +1,6 @@
 use std::fmt;
 
 
-pub trait Node {
-    fn token_literal(&self) -> String;
-}
-
 #[derive(Debug,PartialEq)]
 pub struct Program {
     pub statements: Vec<Statement>

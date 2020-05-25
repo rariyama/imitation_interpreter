@@ -4,6 +4,8 @@ mod token;
 mod parser;
 mod ast;
 mod errors;
+mod evaluator;
+mod object;
 
 fn main() {
     println!("Hello! This is the Monkey programming language!");
