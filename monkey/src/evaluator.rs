@@ -1,11 +1,11 @@
 use crate::ast;
-use super::object;
+use super::object::{Object};
 use super::errors::{Errors};
 
 
 
-pub fn evaluate(program: &ast::Program) -> Result<object::Object, Errors> {
-    let mut result = object::Object::Default;
+pub fn evaluate(program: &ast::Program) -> Result<Object, Errors> {
+    let mut result = Object::Default;
 
     for statement in program.statements.iter() {
         result = evaluate_statement(statement)?;
@@ -13,18 +13,38 @@ pub fn evaluate(program: &ast::Program) -> Result<object::Object, Errors> {
     Ok(result)
 }
 
-fn evaluate_statement(statement: &ast::Statement) -> Result<object::Object, Errors> {
+fn evaluate_statement(statement: &ast::Statement) -> Result<Object, Errors> {
     match statement {
         ast::Statement::ExpressionStatement(expression) => evaluate_expression(expression),
         _ => Err(Errors::NodeError)
         }
     }
 
-fn evaluate_expression(expression: &ast::Expression) -> Result<object::Object, Errors> {
+fn evaluate_expression(expression: &ast::Expression) -> Result<Object, Errors> {
     match expression {
-        ast::Expression::Integer(value) => Ok(object::Object::Integer(*value)),
-        ast::Expression::Bool(bool) => Ok(object::Object::Boolean(*bool)),
+        ast::Expression::Integer(value) => Ok(Object::Integer(*value)),
+        ast::Expression::Bool(bool) => Ok(Object::Boolean(*bool)),
+        ast::Expression::PrefixExpression{operator, right_expression} => {
+            let right = evaluate_expression(&right_expression);
+            evaluate_prefix_expression(operator, right.unwrap())
+        }
         _ =>  Err(Errors::NodeError)
+    }
+}
+
+fn evaluate_prefix_expression(operator: &str, right: Object) -> Result<Object, Errors> {
+    match operator {
+        "!" => evaluate_bang_operation_expression(right),
+        _ => Ok(Object::Null)
+    }
+}
+
+fn evaluate_bang_operation_expression(right: Object) -> Result<Object, Errors> {
+    match right {
+        Object::Boolean(true) => Ok(Object::Boolean(false)),
+        Object::Boolean(false) => Ok(Object::Boolean(true)),
+        Object::Boolean(Null) => Ok(Object::Boolean(true)),
+        _ => Ok(Object::Boolean(false))
     }
 }
 
@@ -73,4 +93,20 @@ mod testing {
         }
     }
 
+    #[test]
+    fn test_bang_operator_expression() {
+        let tests = vec![
+                        ("!true", false),
+                        ("!false", true),
+                        ("!5", false),
+                        ("!!true", true),
+                        ("!!false", false),
+                        ("!!5", true),
+                        ];
+        for test in tests.iter() {
+            let evaluated = test_evaluate(test.0);
+            let boolean = format!("{}", evaluated);
+            assert_eq!(FromStr::from_str(&boolean.to_string()[..]), Ok(test.1));
+        }
+    }
 }
