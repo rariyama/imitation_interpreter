@@ -27,7 +27,12 @@ fn evaluate_expression(expression: &ast::Expression) -> Result<Object, Errors> {
         ast::Expression::PrefixExpression{operator, right_expression} => {
             let right = evaluate_expression(&right_expression);
             evaluate_prefix_expression(operator, right.unwrap())
-        }
+        },
+        ast::Expression::InfixExpression{left_expression, operator, right_expression} => {
+            let left = evaluate_expression(&left_expression);
+            let right = evaluate_expression(&right_expression);
+            evaluate_infix_expression(left.unwrap(), operator, right.unwrap())
+        },
         _ =>  Err(Errors::NodeError)
     }
 }
@@ -52,6 +57,32 @@ fn evaluate_bang_operation_expression(right: Object) -> Result<Object, Errors> {
 fn evaluate_minus_prefix_operator_expression(right: Object) -> Result<Object, Errors> {
     match right {
         Object::Integer(value) => Ok(Object::Integer(-value)),
+        _ =>Ok(Object::Null)
+    }
+}
+
+fn evaluate_infix_expression(left: Object,operator: &str, right: Object) -> Result<Object, Errors> {
+    match (left, right) {
+        (Object::Integer(left),Object::Integer(right)) => {
+            match operator {
+                "+" => Ok(Object::Integer(left + right)),
+                "-" => Ok(Object::Integer(left - right)),
+                "*" => Ok(Object::Integer(left * right)),
+                "/" => Ok(Object::Integer(left / right)),
+                "<" => Ok(Object::Boolean(left < right)),
+                ">" => Ok(Object::Boolean(left > right)),
+                "==" => Ok(Object::Boolean(left == right)),
+                "!=" => Ok(Object::Boolean(left != right)),
+                _ => Ok(Object::Null)
+            }
+        },
+        (Object::Boolean(left), Object::Boolean(right)) => {
+            match operator {
+                "==" => Ok(Object::Boolean(left == right)),
+                "!=" => Ok(Object::Boolean(left != right)),
+                _ => Ok(Object::Null)
+            }
+        }
         _ =>Ok(Object::Null)
     }
 }
@@ -81,7 +112,18 @@ mod testing {
                         ("5", 5),
                         ("10", 10),
                         ("-5", -5),
-                        ("-10", -10)
+                        ("-10", -10),
+                        ("5 + 5 + 5 + 5 - 10", 10),
+                        ("2 * 2 * 2 * 2 * 2", 32),
+                        ("-50 + 100 + -50", 0),
+                        ("5 * 2 + 10", 20),
+                        ("5 + 2 * 10", 25),
+                        ("20 + 2 * -10", 0),
+                        ("50 / 2 * 2 + 10", 60),
+                        ("2 * (5 + 10)", 30),
+                        ("3 * 3 * 3 + 10", 37),
+                        ("3 * (3 * 3) + 10", 37),
+                        ("(5 + 10 * 2 + 15 /3) * 2 + -10", 50),
                         ];
         for test in tests.iter() {
             let evaluated = test_evaluate(test.0);
@@ -94,7 +136,24 @@ mod testing {
     fn test_eval_boolean_expression() {
         let tests = vec![
                         ("true", true),
-                        ("false", false)
+                        ("false", false),
+                        ("1 < 2", true),
+                        ("1 > 2", false),
+                        ("1 < 1", false),
+                        ("1 > 1", false),
+                        ("1 == 1", true),
+                        ("1 != 1", false),
+                        ("1 == 2", false),
+                        ("1 != 2", true),
+                        ("true == true", true),
+                        ("false == false", true),
+                        ("true == false", false),
+                        ("true != false", true),
+                        ("false != true", true),
+                        ("(1 < 2) == true", true),
+                        ("(1 < 2) == false", false),
+                        ("(1 > 2) == true", false),
+                        ("(1 > 2) == false", true),
                         ];
         for test in tests.iter() {
             let evaluated = test_evaluate(test.0);
