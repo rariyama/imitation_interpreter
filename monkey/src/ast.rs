@@ -9,6 +9,14 @@ pub trait Node {
 pub struct Program {
     pub statements: Vec<Statement>
 }
+impl fmt::Display for Program {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            for stmt in self.statements.iter() {
+                write!(f, "{}\n", stmt)?;  
+            }
+            Ok(())  
+    }
+}
 
 #[derive(Debug,PartialEq)]
 pub enum Statement {
@@ -17,16 +25,15 @@ pub enum Statement {
     Return(Expression),
     ExpressionStatement(Expression),
     Block(Vec<Statement>),
-    Parameter(Vec<Statement>),
-    Arguments(Vec<Statement>),
 }
 
 impl fmt::Display for Statement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Statement::LetStatement{
-                               identifier, value
-                                        } =>write!(f, "let {} = {};",identifier,  value),
+                               identifier,
+                               value
+                                    } =>write!(f, "let {} = {};",identifier,  value),
             Statement::Return(Expression) =>write!(f, "return {}", Expression),
             Statement::ExpressionStatement(Expression) =>write!(f, "{}", Expression),
             Statement::Block(Statements) => {
@@ -36,20 +43,6 @@ impl fmt::Display for Statement {
                                                  }
                                             Ok(())  
                                             },
-            Statement::Parameter(Statements) => {
-                for stmt in Statements.iter()
-                    {
-                     write!(f, "{}", stmt)?;
-                    }
-               Ok(())  
-               },
-            Statement::Arguments(Statements) => {
-             for stmt in Statements.iter()
-                 {
-                  write!(f, "{}", stmt)?;
-                 }
-            Ok(())  
-            },
            _ => write!(f, "none")
                     }
                 }
@@ -57,88 +50,51 @@ impl fmt::Display for Statement {
 
 #[derive(Debug,PartialEq)]
 pub enum Expression {
-    Identifier(Identifier),
-    Integer(Integer),
-    LParen(LParen),
-    Bool(Bool),
-    PrefixExpression(PrefixExpression),
-    InfixExpression(InfixExpression),
-    IfExpression(IfExpression),
-    FunctionLiteral(FunctionLiteral),
-    CallExpression(CallExpression)
+    Identifier(String),
+    Integer(i32),
+    LParen(String),
+    Bool(bool),
+    PrefixExpression{operator: String,
+                     right_expression: Box<Expression>
+                     },
+    InfixExpression{left_expression: Box<Expression>,
+                    operator: String,
+                    right_expression: Box<Expression>
+                   },
+    IfExpression{condition: Box<Expression>,
+                 consequence: Box<Statement>,
+                 alternative: Box<Statement>
+                },
+    FunctionLiteral{parameters: Vec<Expression>,
+                    body: Box<Statement>,
+                   },
+    CallExpression{function: Box<Expression>,
+                    body: Vec<Expression>
+                  }
 }
 
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Expression::Identifier(Identifier{value}) => write!(f, "{}",&value),
-            Expression::Integer(Integer{value}) => write!(f, "{}",value),
-            Expression::LParen(LParen{value}) => write!(f, "{}",value),
-            Expression::Bool(Bool{value}) => write!(f, "{}",value),
-            Expression::PrefixExpression(PrefixExpression{operator,right_expression}) => write!(f, "{}{}",operator, right_expression),
-            Expression::InfixExpression(InfixExpression{left_expression,operator,right_expression}) => write!(f, "{} {} {}",left_expression, operator, right_expression),
-            Expression::IfExpression(IfExpression{condition, consequence, alternative}) => write!(f, "{} {} {}",condition, consequence, alternative),
-            Expression::FunctionLiteral(FunctionLiteral{parameters, body}) => write!(f, "{} {} ",parameters, body),
-            Expression::CallExpression(CallExpression{function, body}) => write!(f, "{} {:?} ",function, body),
+            Expression::Identifier(value) => write!(f, "{}",&value),
+            Expression::Integer(value) => write!(f, "{}",value),
+            Expression::LParen(value) => write!(f, "{}",value),
+            Expression::Bool(value) => write!(f, "{}",value),
+            Expression::PrefixExpression{operator,right_expression} => write!(f, "{}{}",operator, right_expression),
+            Expression::InfixExpression{left_expression,operator,right_expression} => write!(f, "{} {} {}",left_expression, operator, right_expression),
+            Expression::IfExpression{condition, consequence, alternative} => write!(f, "if ({}) {{{}}} else {{{}}}",condition, consequence, alternative),
+            Expression::FunctionLiteral{parameters, body} => write!(f, "fn ({}) {{{}}}",parameters.iter().map(|expression| -> &str {
+                                                                                                                        match expression {
+                                                                                                                            Expression::Identifier(identifier) => identifier,
+                                                                                                                            _ => unreachable!(),
+                                                                                                                        }}).collect::<Vec<_>>().join(", ")
+                                                                                                                      , body),
+            Expression::CallExpression{function, body} => write!(f, "{}({});",
+                                                                function,
+                                                                body.iter().map(|expression| format!("{}", &expression)).collect::<Vec<_>>().join(", "),
+                                                                ),
         }
     }
-}
-
-#[derive(Debug,PartialEq)]
-pub struct Identifier {
-    pub value: String
-}
-
-#[derive(Debug,PartialEq)]
-pub struct Integer {
-    pub value: i32
-}
-
-#[derive(Debug,PartialEq)]
-pub struct LParen {
-    pub value: String
-}
-
-#[derive(Debug,PartialEq)]
-pub struct Bool {
-    pub value: bool
-}
-
-#[derive(Debug,PartialEq)]
-pub struct PrefixExpression {
-    pub operator: String,
-    pub right_expression: Box<Expression>
-}
-
-#[derive(Debug,PartialEq)]
-pub struct InfixExpression {
-    pub left_expression: Box<Expression>,
-    pub operator: String,
-    pub right_expression: Box<Expression>
-}
-
-#[derive(Debug,PartialEq)]
-pub struct IfExpression {
-    pub condition: Box<Expression>,
-    pub consequence: Box<Statement>,
-    pub alternative: Box<Statement>
-}
-
-#[derive(Debug,PartialEq)]
-pub struct FunctionLiteral {
-    pub parameters: Box<Statement>,
-    pub body: Box<Statement>,
-}
-
-#[derive(Debug,PartialEq)]
-pub struct CallExpression {
-    pub function: Box<Expression>,
-    pub body: Vec<Expression>,
-}
-
-#[derive(Debug,PartialEq)]
-pub struct BlockStatement {
-    pub statements: Vec<Statement>
 }
 
 #[derive(Debug, PartialEq, PartialOrd)]
