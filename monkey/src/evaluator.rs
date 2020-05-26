@@ -8,8 +8,13 @@ pub fn evaluate(program: &ast::Program) -> Result<Object, Errors> {
     let mut result = Object::Default;
     for statement in program.statements.iter() {
         result = evaluate_statement(statement)?;
+        // if statement contains 'return', process should be broken in order to return value.
         if let Object::Return(value) = result {
             return Ok(*value)
+        }
+        // if the result of evaluation, process should be broken.
+        if result == Object::Error(Errors::InvalidInfix){
+            return Ok(result)
         }
     }
     Ok(result)
@@ -29,9 +34,12 @@ fn evaluate_statement(statement: &ast::Statement) -> Result<Object, Errors> {
 
 fn evaluate_block_statements(statements: &Vec<ast::Statement>) -> Result<Object, Errors> {
     let mut result = Object::Default;
-
     for statement in statements.iter() {
         result = evaluate_statement(statement)?;
+        // if 'return' is in nested block, the value should be returned.
+        if let Object::Return(_) = result {
+            return Ok(result);
+        }
     }
     Ok(result)
 }
@@ -68,7 +76,7 @@ fn evaluate_prefix_expression(operator: &str, right: Object) -> Result<Object, E
     match operator {
         "!" => evaluate_bang_operation_expression(right),
         "-" => evaluate_minus_prefix_operator_expression(right),
-        _ => Ok(Object::Null)
+        _ => Ok(Object::Error(Errors::InvalidOperator(operator.to_string())))
     }
 }
 
@@ -84,7 +92,7 @@ fn evaluate_bang_operation_expression(right: Object) -> Result<Object, Errors> {
 fn evaluate_minus_prefix_operator_expression(right: Object) -> Result<Object, Errors> {
     match right {
         Object::Integer(value) => Ok(Object::Integer(-value)),
-        _ =>Ok(Object::Null)
+        _ =>Ok(Object::Error(Errors::InvalidInteger(Box::new(right))))
     }
 }
 
@@ -100,17 +108,24 @@ fn evaluate_infix_expression(left: Object,operator: &str, right: Object) -> Resu
                 ">" => Ok(Object::Boolean(left > right)),
                 "==" => Ok(Object::Boolean(left == right)),
                 "!=" => Ok(Object::Boolean(left != right)),
-                _ => Ok(Object::Null)
+                _ => Ok(Object::Error(Errors::InvalidOperator(operator.to_string())))
             }
         },
         (Object::Boolean(left), Object::Boolean(right)) => {
             match operator {
                 "==" => Ok(Object::Boolean(left == right)),
                 "!=" => Ok(Object::Boolean(left != right)),
-                _ => Ok(Object::Null)
+                _ => Ok(Object::Error(Errors::InvalidOperator(operator.to_string())))
             }
-        }
-        _ =>Ok(Object::Null)
+        },
+        (Object::Integer(left), Object::Boolean(right)) => {
+            Ok(Object::Error(Errors::InvalidInfix))
+            },
+        (Object::Boolean(left), Object::Integer(right)) => {
+            Ok(Object::Error(Errors::InvalidInfix))
+            },
+        _ => {
+            Ok(Object::Error(Errors::InvalidInfix))}
     }
 }
 
@@ -240,11 +255,40 @@ mod testing {
                         ("return 10; 9;", "10"),
                         ("return 2 * 5; 9;", "10"),
                         ("9; return 2 * 5;", "10"),
-                        ("if (1 > 2) {10}", "null")
+                        ("if (1 > 2) {10}", "null"),
+                        ("if (10 > 1){
+                             if (10 > 1){
+                                return 10;
+                                        }
+                                      }", "10")
                         ];
         for test in tests.iter() {
             let evaluated = test_evaluate(test.0);
             let return_value = format!("{}", evaluated);
+            assert_eq!(return_value, test.1);
+        }
+    }
+
+    #[test]
+    fn test_error_handling() {
+        let tests = vec![
+                        ("5 + true", "invalid_infix"),
+                        ("5 + true; 5;", "invalid_infix"),
+                        ("-true", "invalid integer: true"),
+                        ("true + false;", "invalid operator: +"),
+                        ("5; true + false;", "invalid operator: +"),
+                        ("if (10 > 1) {true + false;}", "invalid operator: +"),
+                        ("if (10 > 1){
+                            if (10 > 1) {
+                               return true + false;
+                                        }
+                                return 1;
+                                     }", "invalid operator: +")
+                        ];
+        for test in tests.iter() {
+            let evaluated = test_evaluate(test.0);
+            let return_value = format!("{}", evaluated);
+            println!("{}", return_value);
             assert_eq!(return_value, test.1);
         }
     }

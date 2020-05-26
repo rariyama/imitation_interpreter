@@ -72,7 +72,7 @@ pub fn get_keyword(ident: &str) -> TokenKind {
 }
 
 // if other module refers to Token, pub is needed to write 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Token {
     pub token_type: TokenKind,
     pub literal: String

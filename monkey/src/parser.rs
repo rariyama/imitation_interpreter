@@ -343,7 +343,6 @@ impl<'a>  Parser<'a>  {
             self.next_token();
             return true
         } else {
-            println!("expect_token is {:?} but actually got {:?}", token_kind, self.next_token.token_type);
             return false
         }
     }

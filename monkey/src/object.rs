@@ -1,12 +1,14 @@
 use std::fmt;
 
 use super::ast::{Expression};
+use super::errors::{Errors};
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug,PartialEq, Clone)]
 pub enum Object {
     Integer(i32),
     Boolean(bool),
     Return(Box<Object>),
+    Error(Errors),
     Null,
     Default
 }
@@ -18,7 +20,8 @@ impl fmt::Display for Object {
            Object::Boolean(value) => write!(f, "{}", value),
            Object::Return(value) => write!(f, "{}", value),
            Object::Null => write!(f, "null"),
-           Object::Default => write!(f, "default")
+           Object::Default => write!(f, "default"),
+           Object::Error(value) => write!(f, "{}", value)
        }
     }
 }
