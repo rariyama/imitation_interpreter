@@ -8,6 +8,9 @@ pub fn evaluate(program: &ast::Program) -> Result<Object, Errors> {
     let mut result = Object::Default;
     for statement in program.statements.iter() {
         result = evaluate_statement(statement)?;
+        if let Object::Return(value) = result {
+            return Ok(*value)
+        }
     }
     Ok(result)
 }
@@ -16,6 +19,10 @@ fn evaluate_statement(statement: &ast::Statement) -> Result<Object, Errors> {
     match statement {
         ast::Statement::ExpressionStatement(expression) => evaluate_expression(expression),
         ast::Statement::Block(stmt) => evaluate_block_statements(stmt),
+        ast::Statement::Return(expression) => {
+                                let return_expression = evaluate_expression(expression)?;
+                                Ok(Object::Return(Box::new(return_expression)))
+                                },
         _ => Err(Errors::NodeError),
         }
     }
@@ -223,6 +230,22 @@ mod testing {
             let evaluated = test_evaluate(test.0);
             let conclusion = format!("{}", evaluated);
             assert_eq!(conclusion, test.1);
+        }
+    }
+
+    #[test]
+    fn test_return_statement() {
+        let tests = vec![
+                        ("return 10;", "10"),
+                        ("return 10; 9;", "10"),
+                        ("return 2 * 5; 9;", "10"),
+                        ("9; return 2 * 5;", "10"),
+                        ("if (1 > 2) {10}", "null")
+                        ];
+        for test in tests.iter() {
+            let evaluated = test_evaluate(test.0);
+            let return_value = format!("{}", evaluated);
+            assert_eq!(return_value, test.1);
         }
     }
 }

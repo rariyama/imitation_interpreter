@@ -6,6 +6,7 @@ use super::ast::{Expression};
 pub enum Object {
     Integer(i32),
     Boolean(bool),
+    Return(Box<Object>),
     Null,
     Default
 }
@@ -15,6 +16,7 @@ impl fmt::Display for Object {
        match self {
            Object::Integer(value) => write!(f, "{}", value),
            Object::Boolean(value) => write!(f, "{}", value),
+           Object::Return(value) => write!(f, "{}", value),
            Object::Null => write!(f, "null"),
            Object::Default => write!(f, "default")
        }
@@ -25,6 +27,7 @@ pub enum ObjectType {
     INTEGER_OBJ,
     BOOLEAN_OBJ,
     NULL_OBJ,
+    RETURN_VALUE_OBJ,
     ILLEGAL
 }
 
