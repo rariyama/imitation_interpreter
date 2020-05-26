@@ -118,12 +118,6 @@ fn evaluate_infix_expression(left: Object,operator: &str, right: Object) -> Resu
                 _ => Ok(Object::Error(Errors::InvalidOperator(operator.to_string())))
             }
         },
-        (Object::Integer(left), Object::Boolean(right)) => {
-            Ok(Object::Error(Errors::InvalidInfix))
-            },
-        (Object::Boolean(left), Object::Integer(right)) => {
-            Ok(Object::Error(Errors::InvalidInfix))
-            },
         _ => {
             Ok(Object::Error(Errors::InvalidInfix))}
     }
