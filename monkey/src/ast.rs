@@ -59,7 +59,7 @@ pub enum Expression {
                    },
     IfExpression{condition: Box<Expression>,
                  consequence: Box<Statement>,
-                 alternative: Box<Statement>
+                 alternative: Option<Box<Statement>>
                 },
     FunctionLiteral{parameters: Vec<Expression>,
                     body: Box<Statement>,
@@ -78,7 +78,12 @@ impl fmt::Display for Expression {
             Expression::Bool(value) => write!(f, "{}",value),
             Expression::PrefixExpression{operator,right_expression} => write!(f, "{}{}",operator, right_expression),
             Expression::InfixExpression{left_expression,operator,right_expression} => write!(f, "{} {} {}",left_expression, operator, right_expression),
-            Expression::IfExpression{condition, consequence, alternative} => write!(f, "if ({}) {{{}}} else {{{}}}",condition, consequence, alternative),
+            Expression::IfExpression{condition, consequence, alternative} => {
+                                                    match alternative {
+                                                        Some(alternative) =>write!(f, "if ({}) {{{}}} else {{{}}}",condition, consequence, alternative),
+                                                        None => write!(f, "if ({}) {{{}}}",condition, consequence),
+                                                    }
+                                                    }//write!(f, "if ({}) {{{}}} else {{{}}}",condition, consequence, alternative),
             Expression::FunctionLiteral{parameters, body} => write!(f, "fn ({}) {{{}}}",parameters.iter().map(|expression| -> &str {
                                                                                                                         match expression {
                                                                                                                             Expression::Identifier(identifier) => identifier,

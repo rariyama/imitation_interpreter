@@ -62,6 +62,12 @@ pub struct Boolean {
     value: bool
 }
 
+impl fmt::Display for Boolean {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        Ok(write!(f, "{}", self.value))?
+    }
+}
+
 impl Boolean {
     pub fn inspect(&mut self) -> bool {
         self.value
@@ -73,6 +79,12 @@ impl Boolean {
 
 #[derive(Debug,PartialEq)]
 pub struct Null {
+}
+
+impl fmt::Display for Null {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        Ok(write!(f, "null"))?
+    }
 }
 
 impl Null {

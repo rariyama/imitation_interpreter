@@ -6,7 +6,6 @@ use super::errors::{Errors};
 
 pub fn evaluate(program: &ast::Program) -> Result<Object, Errors> {
     let mut result = Object::Default;
-
     for statement in program.statements.iter() {
         result = evaluate_statement(statement)?;
     }
@@ -16,9 +15,19 @@ pub fn evaluate(program: &ast::Program) -> Result<Object, Errors> {
 fn evaluate_statement(statement: &ast::Statement) -> Result<Object, Errors> {
     match statement {
         ast::Statement::ExpressionStatement(expression) => evaluate_expression(expression),
-        _ => Err(Errors::NodeError)
+        ast::Statement::Block(stmt) => evaluate_block_statements(stmt),
+        _ => Err(Errors::NodeError),
         }
     }
+
+fn evaluate_block_statements(statements: &Vec<ast::Statement>) -> Result<Object, Errors> {
+    let mut result = Object::Default;
+
+    for statement in statements.iter() {
+        result = evaluate_statement(statement)?;
+    }
+    Ok(result)
+}
 
 fn evaluate_expression(expression: &ast::Expression) -> Result<Object, Errors> {
     match expression {
@@ -33,6 +42,17 @@ fn evaluate_expression(expression: &ast::Expression) -> Result<Object, Errors> {
             let right = evaluate_expression(&right_expression);
             evaluate_infix_expression(left.unwrap(), operator, right.unwrap())
         },
+        ast::Expression::IfExpression{condition, consequence, alternative} => {
+            let condition = evaluate_expression(&condition);
+            if is_truthy(condition?) {
+                evaluate_statement(consequence)
+            } else {
+                match alternative {
+                    Some(alternative) => evaluate_statement(alternative),
+                    None => Ok(Object::Null)
+                }
+            }
+        }
         _ =>  Err(Errors::NodeError)
     }
 }
@@ -87,6 +107,15 @@ fn evaluate_infix_expression(left: Object,operator: &str, right: Object) -> Resu
     }
 }
 
+fn is_truthy(object: Object) -> bool {
+    match object {
+        Object::Null => false,
+        Object::Boolean(true) => true,
+        Object::Boolean(false) => false,
+        _ => true
+    }
+}
+
 #[cfg(test)]// test runs only when execute cargo run
 mod testing {
     use crate::lexer::Lexer;
@@ -102,8 +131,8 @@ mod testing {
     fn test_evaluate(input: &str) -> Object {
         let l = Lexer::new(input);
         let mut p = Parser::new(l);
-        let program = p.parse_program().unwrap();
-        evaluator::evaluate(&program).unwrap()
+        let program = p.parse_program();
+        evaluator::evaluate(&program.unwrap()).unwrap()
     }
 
     #[test]
@@ -176,6 +205,24 @@ mod testing {
             let evaluated = test_evaluate(test.0);
             let boolean = format!("{}", evaluated);
             assert_eq!(FromStr::from_str(&boolean.to_string()[..]), Ok(test.1));
+        }
+    }
+
+    #[test]
+    fn test_if_else_expression() {
+        let tests = vec![
+                        ("if (true) {10}", "10"),
+                        ("if (false) {10}", "null"),
+                        ("if (1) {10}", "10"),
+                        ("if (1 < 2) { 10 }", "10"),
+                        ("if (1 > 2) {10}", "null"),
+                        ("if (1 > 2) {10} else {20}", "20"),
+                        ("if (1 < 2) {10} else {20}", "10"),
+                        ];
+        for test in tests.iter() {
+            let evaluated = test_evaluate(test.0);
+            let conclusion = format!("{}", evaluated);
+            assert_eq!(conclusion, test.1);
         }
     }
 }

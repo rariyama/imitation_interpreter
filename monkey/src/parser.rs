@@ -188,17 +188,16 @@ impl<'a>  Parser<'a>  {
         self.next_token();
         let condition = self.parse_expression(Precedence::LOWEST);
         if !self.expect_next_token(TokenKind::RPAREN) {
-            println!("TokenKind should be RPAREN but actually is {:?}",self.next_token.token_type)
         }
         if !self.expect_next_token(TokenKind::LBRACE) {
-            println!("TokenKind should be LBRACE but actually is {:?}",self.next_token.token_type)
         }
-
+        let alt = self.alternative()?;
+        let alt_some = alt;
 
         let expression = Expression::IfExpression{
                             condition: Box::new(condition?),
                             consequence: Box::new(self.parse_block_statements(TokenKind::LBRACE)?),
-                            alternative: Box::new(self.alternative()?),                           
+                            alternative: self.alternative()?,
         };
         Ok(expression)
     }
@@ -214,16 +213,17 @@ impl<'a>  Parser<'a>  {
         Ok(Statement::Block(statements))
     }
 
-    fn alternative(&mut self) -> Result<Statement, Errors> {
+    fn alternative(&mut self) -> Result<Option<Box<Statement>>, Errors> {
         if self.is_next_token(TokenKind::ELSE) {
         self.next_token();
         if self.expect_next_token(TokenKind::LBRACE) {
-            Ok(self.parse_block_statements(TokenKind::LBRACE))?
+            let alternative = self.parse_block_statements(TokenKind::LBRACE)?;
+            Ok(Some(Box::new(alternative)))
         }else {
             return Err(Errors::TokenInvalid(self.current_token.clone()))
         }
     } else {
-        return Err(Errors::TokenInvalid(self.current_token.clone()))
+           Ok(None)
         }
     }
 
@@ -517,7 +517,7 @@ mod testing {
 
             #[test]
             fn test_if_expression() {
-                let input = "if (x < y) {x} else {y}".to_string();
+                let input = "if (1 > 2) {10} else {20}".to_string();
                 let lexer = Lexer::new(&input);
                 let mut parser = Parser::new(lexer);
                 let program = parser.parse_program().unwrap();
@@ -542,7 +542,6 @@ mod testing {
                 let mut parser = Parser::new(lexer);
                 let program = parser.parse_program().unwrap();
                 let statements = format!("{}", program.statements[0]);
-                println!("{}", statements);
                 assert_eq!(input, statements);
                 }
             }
