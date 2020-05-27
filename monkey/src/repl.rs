@@ -29,7 +29,8 @@ pub fn start() {
         
         let mut parser = parser::Parser::new(lexer);
         let program = parser.parse_program().unwrap();
-        let evaluated = evaluator::evaluate(&program);
+        let mut environment = evaluator::Environment::new();
+        let evaluated = environment.evaluate(&program);
 
         // if input is invalid, display error message and retry.
         if let Err(_error) = &evaluated {

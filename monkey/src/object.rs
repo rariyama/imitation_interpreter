@@ -5,9 +5,11 @@ use super::errors::{Errors};
 
 #[derive(Debug,PartialEq, Clone)]
 pub enum Object {
+    Identifier(String),
     Integer(i32),
     Boolean(bool),
     Return(Box<Object>),
+    Let(Box<Object>),
     Error(Errors),
     Null,
     Default
@@ -16,9 +18,11 @@ pub enum Object {
 impl fmt::Display for Object {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
        match self {
+           Object::Identifier(value) => write!(f, "{}", value),
            Object::Integer(value) => write!(f, "{}", value),
            Object::Boolean(value) => write!(f, "{}", value),
            Object::Return(value) => write!(f, "{}", value),
+           Object::Let(value) => write!(f, "{}", value),
            Object::Null => write!(f, "null"),
            Object::Default => write!(f, "default"),
            Object::Error(value) => write!(f, "{}", value)

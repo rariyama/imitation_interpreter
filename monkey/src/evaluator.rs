@@ -1,74 +1,121 @@
+use std::collections::HashMap;
 use crate::ast;
 use super::object::{Object};
 use super::errors::{Errors};
+use super::ast::{Expression};
 
-
-
-pub fn evaluate(program: &ast::Program) -> Result<Object, Errors> {
-    let mut result = Object::Default;
-    for statement in program.statements.iter() {
-        result = evaluate_statement(statement)?;
-        // if statement contains 'return', process should be broken in order to return value.
-        if let Object::Return(value) = result {
-            return Ok(*value)
-        }
-        // if the result of evaluation, process should be broken.
-        if result == Object::Error(Errors::InvalidInfix){
-            return Ok(result)
-        }
-    }
-    Ok(result)
+#[derive(Debug,PartialEq, Clone)]
+pub struct Environment {
+    store: HashMap<String, Object>
 }
 
-fn evaluate_statement(statement: &ast::Statement) -> Result<Object, Errors> {
-    match statement {
-        ast::Statement::ExpressionStatement(expression) => evaluate_expression(expression),
-        ast::Statement::Block(stmt) => evaluate_block_statements(stmt),
-        ast::Statement::Return(expression) => {
-                                let return_expression = evaluate_expression(expression)?;
-                                Ok(Object::Return(Box::new(return_expression)))
-                                },
-        _ => Err(Errors::NodeError),
-        }
+impl Environment {
+    pub fn new() -> Environment{
+        let env = HashMap::new();
+        return Environment{store: env}
     }
 
-fn evaluate_block_statements(statements: &Vec<ast::Statement>) -> Result<Object, Errors> {
-    let mut result = Object::Default;
-    for statement in statements.iter() {
-        result = evaluate_statement(statement)?;
-        // if 'return' is in nested block, the value should be returned.
-        if let Object::Return(_) = result {
-            return Ok(result);
-        }
+    pub fn get(&mut self, name: String) -> Object {
+        let object = self.store[&name].clone();
+        return object
     }
-    Ok(result)
-}
 
-fn evaluate_expression(expression: &ast::Expression) -> Result<Object, Errors> {
-    match expression {
-        ast::Expression::Integer(value) => Ok(Object::Integer(*value)),
-        ast::Expression::Bool(bool) => Ok(Object::Boolean(*bool)),
-        ast::Expression::PrefixExpression{operator, right_expression} => {
-            let right = evaluate_expression(&right_expression);
-            evaluate_prefix_expression(operator, right.unwrap())
-        },
-        ast::Expression::InfixExpression{left_expression, operator, right_expression} => {
-            let left = evaluate_expression(&left_expression);
-            let right = evaluate_expression(&right_expression);
-            evaluate_infix_expression(left.unwrap(), operator, right.unwrap())
-        },
-        ast::Expression::IfExpression{condition, consequence, alternative} => {
-            let condition = evaluate_expression(&condition);
-            if is_truthy(condition?) {
-                evaluate_statement(consequence)
-            } else {
-                match alternative {
-                    Some(alternative) => evaluate_statement(alternative),
-                    None => Ok(Object::Null)
-                }
+    pub fn set(&mut self, name: String, value: Object) -> Object {
+        self.store.insert(name, value.clone());
+        return value;
+    }
+
+
+    pub fn evaluate(&mut self, program: &ast::Program) -> Result<Object, Errors> {
+        let mut result = Object::Default;
+        // evaluate sentence per semicolon.
+        for statement in program.statements.iter() {
+            result = self.evaluate_statement(statement)?;
+            // if statement contains 'return', process should be broken in order to return value.
+            if let Object::Return(value) = result {
+                return Ok(*value)
+            }
+            // if the result of evaluation, process should be broken.
+            if result == Object::Error(Errors::InvalidInfix){
+                return Ok(result)
             }
         }
-        _ =>  Err(Errors::NodeError)
+        Ok(result)
+    }
+
+    fn evaluate_statement(&mut self, statement: &ast::Statement) -> Result<Object, Errors> {
+        match statement {
+            ast::Statement::ExpressionStatement(expression) => self.evaluate_expression(expression),
+            ast::Statement::Block(stmt) => self.evaluate_block_statements(stmt),
+            ast::Statement::Return(expression) => {
+                                    let return_expression = self.evaluate_expression(expression)?;
+                                    Ok(Object::Return(Box::new(return_expression)))
+                                    },
+            ast::Statement::LetStatement{identifier ,value} => {
+                                                 if let Expression::Identifier(identifier) = identifier {
+                                                    // if expression is identifier, evaluate value, and 
+                                                    // append identifier as variable.
+                                                    let evaluated_value = self.evaluate_expression(&value)?; 
+                                                    let value = self.set(identifier.to_owned(), evaluated_value);
+                                                    return Ok(value)
+                                                 }
+                                                 Ok(Object::Null)
+                                                },
+            _ => Err(Errors::NodeError),
+            }
+        }
+
+    fn evaluate_block_statements(&mut self, statements: &Vec<ast::Statement>) -> Result<Object, Errors> {
+        let mut result = Object::Default;
+        for statement in statements.iter() {
+            result = self.evaluate_statement(statement)?;
+            // if 'return' is in nested block, the value should be returned.
+            if let Object::Return(_) = result {
+                return Ok(result);
+            }
+        }
+        Ok(result)
+    }
+
+    fn evaluate_expression(&mut self, expression: &ast::Expression) -> Result<Object, Errors> {
+        match expression {
+            ast::Expression::Identifier(value) => {
+                // if a key exists in Environment map,
+                // get value which is equivalent to it.
+                match self.get(value.clone()) {
+                    value => {
+                        Ok(value)},
+                    _ => Ok(Object::Null)
+                    }
+                },
+            ast::Expression::Integer(value) => Ok(Object::Integer(*value)),
+            ast::Expression::Bool(bool) => Ok(Object::Boolean(*bool)),
+            ast::Expression::PrefixExpression{operator, right_expression} => {
+                let right = self.evaluate_expression(&right_expression);
+                evaluate_prefix_expression(operator, right.unwrap())
+            },
+            ast::Expression::InfixExpression{left_expression, operator, right_expression} => {
+                // if there are more than two calculations, left expression should be a calculation.
+                // it is firstly evaluated, and then the result and right_expression are calculated.
+                // for example, the whole sentence is 1 + 2 + 5. firstly, 1 + 2 is evaluated and
+                // the result is 3. After that the result and 5 is evaluated.
+                let left = self.evaluate_expression(&left_expression);
+                let right = self.evaluate_expression(&right_expression);
+                evaluate_infix_expression(left.unwrap(), operator, right.unwrap())
+            },
+            ast::Expression::IfExpression{condition, consequence, alternative} => {
+                let condition = self.evaluate_expression(&condition);
+                if is_truthy(condition?) {
+                    self.evaluate_statement(consequence)
+                } else {
+                    match alternative {
+                        Some(alternative) => self.evaluate_statement(alternative),
+                        None => Ok(Object::Null)
+                    }
+                }
+            }
+            _ =>  Err(Errors::NodeError)
+        }
     }
 }
 
@@ -135,6 +182,7 @@ fn is_truthy(object: Object) -> bool {
 #[cfg(test)]// test runs only when execute cargo run
 mod testing {
     use crate::lexer::Lexer;
+    use crate::evaluator::Environment;
     use crate::token::TokenKind;
     use crate::ast::Statement::Block;
     use crate::ast::Statement;
@@ -148,7 +196,8 @@ mod testing {
         let l = Lexer::new(input);
         let mut p = Parser::new(l);
         let program = p.parse_program();
-        evaluator::evaluate(&program.unwrap()).unwrap()
+        let mut environment = Environment::new();
+        environment.evaluate(&program.unwrap()).unwrap()
     }
 
     #[test]
@@ -283,6 +332,21 @@ mod testing {
             let evaluated = test_evaluate(test.0);
             let return_value = format!("{}", evaluated);
             println!("{}", return_value);
+            assert_eq!(return_value, test.1);
+        }
+    }
+
+    #[test]
+    fn test_let_statements() {
+        let tests = vec![
+                        ("let a = 5; a;", "5"),
+                        ("let a = 5 * 5; a;", "25"),
+                        ("let a = 5 ; let b = a; b;", "5"),
+                        ("let a = 5 ; let b = a; let c = a + b + 5; c;", "15"), 
+                        ];
+        for test in tests.iter() {
+            let evaluated = test_evaluate(test.0);
+            let return_value = format!("{}", evaluated);
             assert_eq!(return_value, test.1);
         }
     }
