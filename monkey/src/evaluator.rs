@@ -55,7 +55,7 @@ impl Environment {
                                                  if let Expression::Identifier(identifier) = identifier {
                                                     // if expression is identifier, evaluate value, and 
                                                     // append identifier as variable.
-                                                    let evaluated_value = self.evaluate_expression(&value)?; 
+                                                    let evaluated_value = self.evaluate_expression(&value)?;
                                                     let value = self.set(identifier.to_owned(), evaluated_value);
                                                     return Ok(value)
                                                  }

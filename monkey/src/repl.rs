@@ -7,6 +7,9 @@ const PROMPT: &str = ">> ";
 
 
 pub fn start() {
+    // if environment is defined outside loop,
+    // initialize it per iterator, and can't contain variables.
+    let mut environment = evaluator::Environment::new();
     loop {
         // display prompt symbol
         io::stdout().flush().unwrap();
@@ -29,7 +32,6 @@ pub fn start() {
         
         let mut parser = parser::Parser::new(lexer);
         let program = parser.parse_program().unwrap();
-        let mut environment = evaluator::Environment::new();
         let evaluated = environment.evaluate(&program);
 
         // if input is invalid, display error message and retry.
