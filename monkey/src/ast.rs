@@ -14,7 +14,7 @@ impl fmt::Display for Program {
     }
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug,PartialEq, Clone)]
 pub enum Statement {
     LetStatement{identifier: Expression,
                  value: Expression},
@@ -44,7 +44,7 @@ impl fmt::Display for Statement {
                 }
             }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug,PartialEq, Clone)]
 pub enum Expression {
     Identifier(String),
     Integer(i32),

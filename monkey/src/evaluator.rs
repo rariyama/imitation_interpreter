@@ -4,20 +4,31 @@ use super::object::{Object};
 use super::errors::{Errors};
 use super::ast::{Expression};
 
+
 #[derive(Debug,PartialEq, Clone)]
 pub struct Environment {
-    store: HashMap<String, Object>
+    store: HashMap<String, Object>,
+    outer: Option<Box<Environment>>
 }
 
 impl Environment {
     pub fn new() -> Environment{
         let env = HashMap::new();
-        return Environment{store: env}
+        return Environment{store: env, outer: None}
     }
 
-    pub fn get(&mut self, name: String) -> Object {
-        let object = self.store[&name].clone();
-        return object
+    pub fn new_outer(self) -> Environment {
+        return Environment{store: HashMap::new(), outer: Some(Box::new(self.clone()))}
+    }
+
+    pub fn get(& self, name: &str) -> Option<Object> {
+        match self.store.get(name) {
+            Some(value) => Some(value.clone()),
+            None => match &self.outer {
+                Some(outer) => outer.get(name),
+                None => None
+            }
+        }
     }
 
     pub fn set(&mut self, name: String, value: Object) -> Object {
@@ -82,8 +93,8 @@ impl Environment {
             ast::Expression::Identifier(value) => {
                 // if a key exists in Environment map,
                 // get value which is equivalent to it.
-                match self.get(value.clone()) {
-                    value => {
+                match self.get(value) {
+                    Some(value) => {
                         Ok(value)},
                     _ => Ok(Object::Null)
                     }
@@ -113,9 +124,62 @@ impl Environment {
                         None => Ok(Object::Null)
                     }
                 }
-            }
+            },
+            ast::Expression::FunctionLiteral{parameters, body} => {
+                let obj = Object::Function{params: parameters.clone(),
+                                           body: *body.clone(),
+                                           env: Environment{store: self.store.clone(), outer:None}
+                                          };
+                Ok(obj)
+            },
+            ast::Expression::CallExpression{function, body} => {
+                let func = self.evaluate_expression(function)?;
+                match self.evaluate_expression(function) {
+                    Ok(value) =>{
+                        let args = self.evaluate_arguments(body.to_vec())?;
+                        let res = apply_function(func, args);
+                        return res
+                    },
+                    Err(_) => return Ok(Object::Null)
+                }
+
+                Ok(Object::Null)
+            },
             _ =>  Err(Errors::NodeError)
         }
+    }
+
+    fn evaluate_arguments(&mut self, expressions: Vec<Expression>) -> Result<Vec<Object>, Errors> {
+        let mut results: Vec<Object> = Vec::new();
+        for expression in expressions.iter() {
+            match self.evaluate_expression(expression) {
+                Ok(value) => {results.push(value)
+                             },
+                Err(_) => return Ok(results)
+            }
+        }
+        Ok(results)    
+    }
+}
+
+fn apply_function(func: Object, args: Vec<Object>) -> Result<Object, Errors> {
+    match func {
+        Object::Function{params, body, env} => {
+            // the value of parameter is inserted in outer when function is called.
+            let mut outer = env.new_outer();
+            for (i, param) in params.iter().enumerate() {
+                if let Expression::Identifier(param) = param {
+                    outer.set(param.to_string(), args[i].clone());
+                }
+            }
+            match outer.evaluate_statement(&body)? {
+                Object::Return(expression) => {
+                    return Ok(*expression)
+                },
+                other_expression => return Ok(other_expression)
+            }
+            Ok(Object::Null)},
+        _ => {Ok(Object::Null)}
     }
 }
 
@@ -331,7 +395,6 @@ mod testing {
         for test in tests.iter() {
             let evaluated = test_evaluate(test.0);
             let return_value = format!("{}", evaluated);
-            println!("{}", return_value);
             assert_eq!(return_value, test.1);
         }
     }
@@ -350,4 +413,31 @@ mod testing {
             assert_eq!(return_value, test.1);
         }
     }
+
+    #[test]
+    fn test_function_statements() {
+        let tests = vec![
+                ("let identity = fn(x) {x;}; identity(5);", "5"),
+                ("let identity = fn(x) {return x;}; identity(5);", "5"),
+                ("let double = fn(x) {x * 2;}; double(5);", "10"),
+                ("let add = fn(x, y) {x + y;}; add(5, 5);", "10"),
+                ("let add = fn(x, y) {x + y;}; add(5 + 5, add(5, 5));", "20"),
+                ("fn(x) {x;}(5)", "5"),
+                    ];
+        for test in tests.iter() {
+            let evaluated = test_evaluate(test.0);
+            let return_value = format!("{}", evaluated);
+            assert_eq!(return_value, test.1);
+        }
+    }
+
+    #[test]
+    fn test_closures() {
+        let input = "let new_adder = fn(x) {fn(y) {x + y};}; 
+                     let add_two = new_adder(2);
+                     add_two(2);";
+        let evaluated = test_evaluate(input);
+        let return_value = format!("{}", evaluated);
+        assert_eq!(return_value.parse::<i32>().unwrap(), 4);
+        }
 }
