@@ -104,7 +104,9 @@ impl<'a>  Parser<'a>  {
 
     fn parse_expression(&mut self, precedence: Precedence) -> Result<Expression, Errors> {
         let mut exp = match self.current_token.token_type {
-            TokenKind::IDENT => Expression::Identifier(self.parse_identifier()?),
+            TokenKind::IDENT => {Expression::Identifier(self.parse_identifier()?)},
+            TokenKind::STRING => {
+                Expression::String(self.parse_string()?)},
             TokenKind::INT => Expression::Integer(self.parse_integer()?),
             TokenKind::TRUE => Expression::Bool(true),
             TokenKind::FALSE => Expression::Bool(false),
@@ -164,6 +166,10 @@ impl<'a>  Parser<'a>  {
     }
 
     fn parse_identifier(&mut self) -> Result<String, Errors> {
+        return Ok(self.current_token.literal.to_string())
+    }
+
+    fn parse_string(&mut self) -> Result<String, Errors> {
         return Ok(self.current_token.literal.to_string())
     }
 
@@ -542,5 +548,14 @@ mod testing {
                 let program = parser.parse_program().unwrap();
                 let statements = format!("{}", program.statements[0]);
                 assert_eq!(input, statements);
+                }
+            #[test]
+            fn test_string_literal_expression() {
+                let input = r#""Hello world;""#;
+                let lexer = Lexer::new(&input);
+                let mut parser = Parser::new(lexer);
+                let program = parser.parse_program().unwrap();
+                let statements = format!("{}", program.statements[0]);
+                assert_eq!("Hello world;", statements);
                 }
             }

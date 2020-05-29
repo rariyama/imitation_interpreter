@@ -7,6 +7,7 @@ use super::errors::{Errors};
 #[derive(Debug,PartialEq, Clone)]
 pub enum Object {
     Identifier(String),
+    String(String),
     Integer(i32),
     Boolean(bool),
     Return(Box<Object>),
@@ -24,6 +25,7 @@ impl fmt::Display for Object {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
        match self {
            Object::Identifier(value) => write!(f, "{}", value),
+           Object::String(value) => write!(f, "{}", value),
            Object::Integer(value) => write!(f, "{}", value),
            Object::Boolean(value) => write!(f, "{}", value),
            Object::Return(value) => write!(f, "{}", value),

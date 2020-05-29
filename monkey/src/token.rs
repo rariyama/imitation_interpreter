@@ -39,6 +39,8 @@ pub enum TokenKind {
      ELSE,        // else
      RETURN,      // return
 
+     STRING,
+
      DEFAULT,
 }
 

@@ -99,6 +99,7 @@ impl Environment {
                     _ => Ok(Object::Null)
                     }
                 },
+            ast::Expression::String(value) => Ok(Object::String(value.to_owned())),
             ast::Expression::Integer(value) => Ok(Object::Integer(*value)),
             ast::Expression::Bool(bool) => Ok(Object::Boolean(*bool)),
             ast::Expression::PrefixExpression{operator, right_expression} => {
@@ -439,5 +440,13 @@ mod testing {
         let evaluated = test_evaluate(input);
         let return_value = format!("{}", evaluated);
         assert_eq!(return_value.parse::<i32>().unwrap(), 4);
+        }
+
+    #[test]
+    fn test_string() {
+        let input = r#""Hello world;""#;
+        let evaluated = test_evaluate(input);
+        let return_value = format!("{}", evaluated);
+        assert_eq!(return_value, "Hello world;");
         }
 }

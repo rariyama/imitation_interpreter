@@ -47,6 +47,7 @@ impl fmt::Display for Statement {
 #[derive(Debug,PartialEq, Clone)]
 pub enum Expression {
     Identifier(String),
+    String(String),
     Integer(i32),
     LParen(String),
     Bool(bool),
@@ -73,6 +74,7 @@ impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Expression::Identifier(value) => write!(f, "{}",&value),
+            Expression::String(value) => write!(f, "{}", &value),
             Expression::Integer(value) => write!(f, "{}",value),
             Expression::LParen(value) => write!(f, "{}",value),
             Expression::Bool(value) => write!(f, "{}",value),
