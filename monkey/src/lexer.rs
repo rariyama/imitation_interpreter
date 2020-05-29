@@ -38,7 +38,6 @@ impl<'a>  Lexer<'a>  {
             break;
             }
         }
-        println!("{:?}", self.input[position..self.position].to_string());
         self.input[position..self.position].to_string()
     }
 
@@ -171,7 +170,6 @@ impl<'a>  Lexer<'a>  {
             }
             _   => {
                     if Self::is_letter(&self.ch) {
-//                        println!("{:?}", String::from_utf8(vec![32]).unwrap());
                         let ident = self.read_identifier();
                         let ident_token = get_keyword(&ident);
                             token =  Token {
@@ -307,7 +305,6 @@ if (5 < 10) {
     let mut lexer = Lexer::new(input);
     for test in tests.iter() {
         let _token = lexer.next_token();
-        println!("{:?}", _token);
 //        assert_eq!(_token.token_type,  test.0);
 //        assert_eq!(_token.literal, test.1);
         }

@@ -208,7 +208,7 @@ fn evaluate_minus_prefix_operator_expression(right: Object) -> Result<Object, Er
     }
 }
 
-fn evaluate_infix_expression(left: Object,operator: &str, right: Object) -> Result<Object, Errors> {
+fn evaluate_infix_expression(left: Object, operator: &str, right: Object) -> Result<Object, Errors> {
     match (left, right) {
         (Object::Integer(left),Object::Integer(right)) => {
             match operator {
@@ -230,6 +230,14 @@ fn evaluate_infix_expression(left: Object,operator: &str, right: Object) -> Resu
                 _ => Ok(Object::Error(Errors::InvalidOperator(operator.to_string())))
             }
         },
+        (Object::String(left), Object::String(right)) => {
+            if operator != "+" {
+                Ok(Object::Null)
+            } else {
+                let concatenated = format!("{}{}", left, right);
+                Ok(Object::String(concatenated))                
+            }
+        }
         _ => {
             Ok(Object::Error(Errors::InvalidInfix))}
     }
@@ -445,6 +453,13 @@ mod testing {
     #[test]
     fn test_string() {
         let input = r#""Hello world;""#;
+        let evaluated = test_evaluate(input);
+        let return_value = format!("{}", evaluated);
+        assert_eq!(return_value, "Hello world;");
+        }
+    #[test]
+    fn test_string_concatnation() {
+        let input = r#""Hello"+ " " + "world;""#;
         let evaluated = test_evaluate(input);
         let return_value = format!("{}", evaluated);
         assert_eq!(return_value, "Hello world;");
