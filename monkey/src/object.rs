@@ -12,10 +12,14 @@ pub enum Object {
     Boolean(bool),
     Return(Box<Object>),
     Let(Box<Object>),
+    Array(Vec<Object>),
     Function{params: Vec<Expression>,
              body: Statement,
              env: Environment
             },
+    Builtin{
+        func: fn(Vec<Object>) -> Object
+       },
     Error(Errors),
     Null,
     Default
@@ -30,9 +34,10 @@ impl fmt::Display for Object {
            Object::Boolean(value) => write!(f, "{}", value),
            Object::Return(value) => write!(f, "{}", value),
            Object::Let(value) => write!(f, "{}", value),
+           Object::Array(value) => write!(f, "[{}]", value.iter().map(|expression| format!("{}", &expression)).collect::<Vec<_>>().join(", ")),
            Object::Function{params, body, env} => write!(f, "{:?} {} {:?}", params, body, env),
-//           Object::Function{params, body, env} => write!(f, "{:?} {} {:?}", params, body, env),
-           Object::Null => write!(f, "null"),
+           Object::Builtin{func: _} => write!(f, "builtin functions"),
+           Object::Null => write!(f, ""),
            Object::Default => write!(f, "default"),
            Object::Error(value) => write!(f, "{}", value)
        }

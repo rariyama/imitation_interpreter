@@ -156,6 +156,12 @@ impl<'a>  Lexer<'a>  {
             b'}' => {
                 token = Self::new_token(TokenKind::RBRACE, self.ch);
             }
+            b'[' => {
+                token = Self::new_token(TokenKind::LBRACKET, self.ch);
+            }
+            b']' => {
+                token = Self::new_token(TokenKind::RBRACKET, self.ch);
+            }
             b'"' => {
                 token = Token {
                 token_type: TokenKind::STRING,
@@ -221,6 +227,7 @@ if (5 < 10) {
 "foobar"
 "foo bar"
 "Hello world;"
+[1, 2];
 "#;
         let tests = vec![
                (TokenKind::LET, String::from("let")),
@@ -298,15 +305,21 @@ if (5 < 10) {
                (TokenKind::SEMICOLON, String::from(";")),
                (TokenKind::STRING, String::from("foobar")),
                (TokenKind::STRING, String::from("foo bar")),
-               (TokenKind::STRING, String::from("Hello world")),
+               (TokenKind::STRING, String::from("Hello world;")),
+               (TokenKind::LBRACKET, String::from("[")),
+               (TokenKind::INT, String::from("1")),
+               (TokenKind::COMMA, String::from(",")),
+               (TokenKind::INT, String::from("2")),
+               (TokenKind::RBRACKET, String::from("]")),
+               (TokenKind::SEMICOLON, String::from(";")),
                (TokenKind::EOF, String::from("")),
                ];
 
     let mut lexer = Lexer::new(input);
     for test in tests.iter() {
         let _token = lexer.next_token();
-//        assert_eq!(_token.token_type,  test.0);
-//        assert_eq!(_token.literal, test.1);
+        assert_eq!(_token.token_type,  test.0);
+        assert_eq!(_token.literal, test.1);
         }
     }
 }

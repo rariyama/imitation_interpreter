@@ -14,7 +14,11 @@ pub enum Errors {
     InvalidInteger(Box<Object>),
     InvalidIdentifier(Box<Object>),
     InvalidInfix,
-    NodeError
+    NodeError,
+    InvalidNumberOfArguments{got: usize,
+                             want: usize
+                            },
+    LenInvalidTypeError(Box<Object>)
 }
 
 impl fmt::Display for Errors {
@@ -25,7 +29,9 @@ impl fmt::Display for Errors {
             Errors::InvalidInteger(value) => write!(f, "invalid integer: {}", value),
             Errors::InvalidIdentifier(value) => write!(f, "invalid identifier: {}", value),
             Errors::InvalidInfix => write!(f, "invalid_infix"),
-            Errors::NodeError => write!(f, "node_error")
+            Errors::NodeError => write!(f, "node_error"),
+            Errors::InvalidNumberOfArguments{got, want} => write!(f, "wrong number of arguments. got={}, want={}",got, want),
+            Errors::LenInvalidTypeError(value) => write!(f, "argument to len not supported got {}", value)
         }
     }
 }

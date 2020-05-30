@@ -3,22 +3,24 @@ use crate::ast;
 use super::object::{Object};
 use super::errors::{Errors};
 use super::ast::{Expression};
-
+use super::builtins;
 
 #[derive(Debug,PartialEq, Clone)]
 pub struct Environment {
     store: HashMap<String, Object>,
-    outer: Option<Box<Environment>>
+    outer: Option<Box<Environment>>,
+    builtin: HashMap<String, Object>
 }
 
 impl Environment {
     pub fn new() -> Environment{
         let env = HashMap::new();
-        return Environment{store: env, outer: None}
+        let builtins = builtins::new();
+        return Environment{store: env, outer: None, builtin: builtins}
     }
 
     pub fn new_outer(self) -> Environment {
-        return Environment{store: HashMap::new(), outer: Some(Box::new(self.clone()))}
+        return Environment{store: HashMap::new(), outer: Some(Box::new(self.clone())), builtin: builtins::new()}
     }
 
     pub fn get(& self, name: &str) -> Option<Object> {
@@ -96,12 +98,23 @@ impl Environment {
                 match self.get(value) {
                     Some(value) => {
                         Ok(value)},
-                    _ => Ok(Object::Null)
+                    _ => {
+                        match self.builtin.get(value) {
+                            Some(value) => {
+                                Ok(value.to_owned())
+                            },
+                            None => Ok(Object::Null)
+                        }
+                        }
                     }
                 },
             ast::Expression::String(value) => Ok(Object::String(value.to_owned())),
             ast::Expression::Integer(value) => Ok(Object::Integer(*value)),
             ast::Expression::Bool(bool) => Ok(Object::Boolean(*bool)),
+            ast::Expression::Array(value) =>{
+                let array = self.evaluate_arguments(value.to_vec())?;
+                Ok(Object::Array(array))
+            },
             ast::Expression::PrefixExpression{operator, right_expression} => {
                 let right = self.evaluate_expression(&right_expression);
                 evaluate_prefix_expression(operator, right.unwrap())
@@ -129,14 +142,14 @@ impl Environment {
             ast::Expression::FunctionLiteral{parameters, body} => {
                 let obj = Object::Function{params: parameters.clone(),
                                            body: *body.clone(),
-                                           env: Environment{store: self.store.clone(), outer:None}
+                                           env: Environment{store: self.store.clone(), outer:None, builtin: builtins::new()}
                                           };
                 Ok(obj)
             },
             ast::Expression::CallExpression{function, body} => {
-                let func = self.evaluate_expression(function)?;
                 match self.evaluate_expression(function) {
                     Ok(value) =>{
+                        let func = self.evaluate_expression(function)?;
                         let args = self.evaluate_arguments(body.to_vec())?;
                         let res = apply_function(func, args);
                         return res
@@ -179,8 +192,13 @@ fn apply_function(func: Object, args: Vec<Object>) -> Result<Object, Errors> {
                 },
                 other_expression => return Ok(other_expression)
             }
-            Ok(Object::Null)},
-        _ => {Ok(Object::Null)}
+            Ok(Object::Null)
+        }
+        Object::Builtin{func} => {
+            Ok(func(args))
+        }
+        _ => {
+            Ok(Object::Null)}
     }
 }
 
@@ -464,4 +482,29 @@ mod testing {
         let return_value = format!("{}", evaluated);
         assert_eq!(return_value, "Hello world;");
         }
+
+    #[test]
+    fn test_builtin_functions() {
+        let tests = vec![
+            ("len(\"\");", "0"),
+            ("len(\"four\");", "4"),
+            ("len(\"hello world\");", "11"),
+            ("len(1);", "argument to len not supported got 1"),
+            ("len(\"one\", \"two\");", "wrong number of arguments. got=2, want=1"),
+                ];
+        for test in tests.iter() {
+            let evaluated = test_evaluate(test.0);
+            let return_value = format!("{}", evaluated);
+            assert_eq!(return_value, test.1);
+        }
+    }
+
+        #[test]
+        fn test_array_literal() {
+            let input = "[1, 2 * 2, 3 + 3]";
+            let evaluated = test_evaluate(input);
+            let return_value = format!("{}", evaluated);
+            println!("{}", return_value);
+            assert_eq!(return_value, "[1, 4, 6]");
+            }
 }

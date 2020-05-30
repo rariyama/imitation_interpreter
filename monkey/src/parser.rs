@@ -112,6 +112,7 @@ impl<'a>  Parser<'a>  {
             TokenKind::FALSE => Expression::Bool(false),
             TokenKind::IF =>   self.parse_if_expression()?,
             TokenKind::LPAREN => self.parse_grouped_expression()?,
+            TokenKind::LBRACKET => Expression::Array(self.parse_expression_list(TokenKind::RBRACKET)?),
             TokenKind::FUNCTION => self.parse_function_expression()?,
             TokenKind::BANG => self.parse_prefix_expression()?,
             TokenKind::MINUS => self.parse_prefix_expression()?,
@@ -157,6 +158,10 @@ impl<'a>  Parser<'a>  {
                     self.next_token();
                     exp =  self.parse_call_arguments(exp)?;
                 },
+                TokenKind::LBRACKET => {
+                    self.next_token();
+                    exp =  self.parse_index_expression(exp)?;
+                },
                 _ => {
                     return Ok(exp);                
                 }
@@ -175,6 +180,40 @@ impl<'a>  Parser<'a>  {
 
     fn parse_integer(&mut self) -> Result<i32, Errors> {
         return Ok(self.current_token.literal.parse::<i32>().unwrap())
+    }
+
+    fn parse_array_literal(&mut self) -> Result<Expression, Errors> {
+        return Ok(Expression::Null)
+    }
+
+    fn parse_expression_list(&mut self, end: TokenKind)-> Result<Vec<Expression>, Errors> {
+        let mut list: Vec<Expression> = vec![];
+        if self.is_next_token(end) {
+            self.next_token();
+            return Ok(list)
+        } else {
+            // skip left bracket;
+            self.next_token();
+            list.push(self.parse_expression(Precedence::LOWEST)?);
+            // fetch values inside list.
+            while self.is_next_token(TokenKind::COMMA) {
+                self.next_token();
+                self.next_token();
+                list.push(self.parse_expression(Precedence::LOWEST)?)
+            }
+
+            if self.expect_next_token(end) {
+                Ok(list)
+            } else {
+                unimplemented!()
+            }
+        }
+    }
+
+    fn parse_index_expression(&mut self, left: Expression) -> Result<Expression, Errors> {
+        self.next_token();
+        let index = self.parse_expression(Precedence::LOWEST)?;
+        Ok(index)
     }
 
     fn parse_grouped_expression(&mut self) -> Result<Expression, Errors> {
@@ -557,5 +596,26 @@ mod testing {
                 let program = parser.parse_program().unwrap();
                 let statements = format!("{}", program.statements[0]);
                 assert_eq!("Hello world;", statements);
+                }
+
+            #[test]
+            fn test_parse_array_literals() {
+                let input = "[1, 2 * 2, 3 + 3][2]";
+                let lexer = Lexer::new(&input);
+                let mut parser = Parser::new(lexer);
+                let program = parser.parse_program().unwrap();
+                let statements = format!("{}", program.statements[0]);
+                println!("{}", program);
+//                assert_eq!("Hello world;", statements);
+                }
+            #[test]
+            fn test_parse_index_expressions() {
+                let input = "my_array[1 + 1]";
+                let lexer = Lexer::new(&input);
+                let mut parser = Parser::new(lexer);
+                let program = parser.parse_program().unwrap();
+                let statements = format!("{:?}", program.statements);
+                println!("{:?}", statements);
+    //          assert_eq!("Hello world;", statements);
                 }
             }

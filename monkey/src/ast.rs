@@ -50,7 +50,10 @@ pub enum Expression {
     String(String),
     Integer(i32),
     LParen(String),
+    Array(Vec<Expression>),
     Bool(bool),
+    IndexExpression{left: Box<Expression>,
+        right: Box<Expression>},
     PrefixExpression{operator: String,
                      right_expression: Box<Expression>
                      },
@@ -67,7 +70,8 @@ pub enum Expression {
                    },
     CallExpression{function: Box<Expression>,
                     body: Vec<Expression>
-                  }
+                  },
+    Null
 }
 
 impl fmt::Display for Expression {
@@ -77,7 +81,9 @@ impl fmt::Display for Expression {
             Expression::String(value) => write!(f, "{}", &value),
             Expression::Integer(value) => write!(f, "{}",value),
             Expression::LParen(value) => write!(f, "{}",value),
+            Expression::Array(value) => write!(f, "{:?}", value),
             Expression::Bool(value) => write!(f, "{}",value),
+            Expression::IndexExpression{left, right} => write!(f, "{}{}", left, right),
             Expression::PrefixExpression{operator,right_expression} => write!(f, "{}{}",operator, right_expression),
             Expression::InfixExpression{left_expression,operator,right_expression} => write!(f, "{} {} {}",left_expression, operator, right_expression),
             Expression::IfExpression{condition, consequence, alternative} => {
@@ -96,12 +102,15 @@ impl fmt::Display for Expression {
                                                                 function,
                                                                 body.iter().map(|expression| format!("{}", &expression)).collect::<Vec<_>>().join(", "),
                                                                 ),
+            Expression::Array(value) => write!(f, "{:?}", value.iter().map(|expression| format!("{}", &expression)).collect::<Vec<_>>().join(", ")),
+            Null => write!(f, "null")
         }
     }
 }
 
 #[derive(Debug, PartialEq, PartialOrd)]
 pub enum Precedence {
+    LBRACKET,
     LOWEST,      
     EQUALS,       // ==
     LESSGREATER,  // > or <

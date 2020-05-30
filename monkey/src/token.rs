@@ -41,6 +41,11 @@ pub enum TokenKind {
 
      STRING,
 
+     LBRACKET,
+     RBRACKET,
+
+     LOWEST,
+
      DEFAULT,
 }
 
@@ -92,6 +97,7 @@ impl Token {
             TokenKind::SLASH => Precedence::PRODUCT,
             TokenKind::ASTERISK => Precedence::PRODUCT,
             TokenKind::LPAREN => Precedence::CALL,
+            TokenKind::LBRACKET => Precedence::LBRACKET,
             _                   => Precedence::LOWEST
         }
     }
