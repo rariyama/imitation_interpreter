@@ -103,7 +103,8 @@ impl Environment {
                             Some(value) => {
                                 Ok(value.to_owned())
                             },
-                            None => Ok(Object::Null)
+                            None => {
+                                Ok(Object::Null)}
                         }
                         }
                     }
@@ -115,6 +116,11 @@ impl Environment {
                 let array = self.evaluate_arguments(value.to_vec())?;
                 Ok(Object::Array(array))
             },
+            ast::Expression::IndexExpression{left, right} => {
+                                                        let array = self.evaluate_expression(left)?;
+                                                        let index = self.evaluate_expression(right)?;
+                                                        Ok(evaluate_index_expression(array, index))
+                                                        }
             ast::Expression::PrefixExpression{operator, right_expression} => {
                 let right = self.evaluate_expression(&right_expression);
                 evaluate_prefix_expression(operator, right.unwrap())
@@ -167,7 +173,8 @@ impl Environment {
         let mut results: Vec<Object> = Vec::new();
         for expression in expressions.iter() {
             match self.evaluate_expression(expression) {
-                Ok(value) => {results.push(value)
+                Ok(value) => {
+                    results.push(value)
                              },
                 Err(_) => return Ok(results)
             }
@@ -199,6 +206,30 @@ fn apply_function(func: Object, args: Vec<Object>) -> Result<Object, Errors> {
         }
         _ => {
             Ok(Object::Null)}
+    }
+}
+
+fn evaluate_index_expression(left: Object, index: Object) -> Object {
+    match left {
+        Object::Array(left) => {
+            if let Object::Integer(index) = index {
+                let target_array = left.to_vec();
+                evaluate_array_index_expression(target_array, index as i32)
+            } else {
+                Object::Null
+            }
+        },
+        _ => Object::Null
+    }
+}
+
+
+fn evaluate_array_index_expression(array: Vec<Object>, index: i32) -> Object {
+    let max = array.len() as i32;
+    if index < 0 || index > max {
+        return Object::Null
+    } else {
+        array[index as usize].clone()
     }
 }
 
@@ -255,7 +286,7 @@ fn evaluate_infix_expression(left: Object, operator: &str, right: Object) -> Res
                 let concatenated = format!("{}{}", left, right);
                 Ok(Object::String(concatenated))                
             }
-        }
+        },
         _ => {
             Ok(Object::Error(Errors::InvalidInfix))}
     }
@@ -491,7 +522,15 @@ mod testing {
             ("len(\"hello world\");", "11"),
             ("len(1);", "argument to len not supported got 1"),
             ("len(\"one\", \"two\");", "wrong number of arguments. got=2, want=1"),
-                ];
+            ("first([\"a\",\"b\"]);", "a"),
+            ("first(\"ab\");", "argument to 'first' must be array, got ab"),
+            ("last([\"a\",\"b\"]);", "b"),
+            ("last(\"ab\");", "argument to 'last' must be array, got ab"),
+            ("rest([\"a\",\"b\",\"c\",\"d\"]);", "[a, b, c]"),
+            ("rest(\"ab\");", "argument to 'rest' must be array, got ab"),
+            ("push([\"a\",\"b\",\"c\",\"d\"], \"e\");", "[a, b, c, d, e]"),
+            ("push(\"ab\");", "argument to 'push' must be array, got ab"),
+            ];
         for test in tests.iter() {
             let evaluated = test_evaluate(test.0);
             let return_value = format!("{}", evaluated);
@@ -499,12 +538,30 @@ mod testing {
         }
     }
 
-        #[test]
-        fn test_array_literal() {
-            let input = "[1, 2 * 2, 3 + 3]";
-            let evaluated = test_evaluate(input);
+    #[test]
+    fn test_array_literal() {
+        let input = "[1, 2 * 2, 3 + 3]";
+        let evaluated = test_evaluate(input);
+        let return_value = format!("{}", evaluated);
+        assert_eq!(return_value, "[1, 4, 6]");
+        }
+
+    #[test]
+    fn test_array_index_expressions() {
+        let tests = vec![
+            ("[1, 2, 3][0]", "1"),
+            ("[1, 2, 3][1]", "2"),
+            ("[1, 2, 3][2]", "3"),
+            ("let i = 0; [1][i]", "1"),
+            ("[1, 2, 3][1 + 1]", "3"),
+            ("let my_array = [1, 2, 3]; let i = my_array[2]", "3"),
+            ("let my_array = [1, 2, 3];my_array[0] + my_array[1]", "3"),
+            ("let my_array = [1, 2, 3]; let i = my_array[0]; my_array[i]", "2"),
+            ];
+        for test in tests.iter() {
+            let evaluated = test_evaluate(test.0);
             let return_value = format!("{}", evaluated);
-            println!("{}", return_value);
-            assert_eq!(return_value, "[1, 4, 6]");
-            }
+            assert_eq!(return_value, test.1);
+        }
+    }
 }

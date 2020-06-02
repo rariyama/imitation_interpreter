@@ -18,7 +18,11 @@ pub enum Errors {
     InvalidNumberOfArguments{got: usize,
                              want: usize
                             },
-    LenInvalidTypeError(Box<Object>)
+    LenInvalidTypeError(Box<Object>),
+    FirstTypeError(Box<Object>),
+    LastTypeError(Box<Object>),
+    RestTypeError(Box<Object>),
+    PushTypeError(Box<Object>),
 }
 
 impl fmt::Display for Errors {
@@ -31,7 +35,11 @@ impl fmt::Display for Errors {
             Errors::InvalidInfix => write!(f, "invalid_infix"),
             Errors::NodeError => write!(f, "node_error"),
             Errors::InvalidNumberOfArguments{got, want} => write!(f, "wrong number of arguments. got={}, want={}",got, want),
-            Errors::LenInvalidTypeError(value) => write!(f, "argument to len not supported got {}", value)
+            Errors::LenInvalidTypeError(value) => write!(f, "argument to len not supported got {}", value),
+            Errors::FirstTypeError(value) => write!(f, "argument to 'first' must be array, got {}", value),
+            Errors::LastTypeError(value) => write!(f, "argument to 'last' must be array, got {}", value),
+            Errors::RestTypeError(value) => write!(f, "argument to 'rest' must be array, got {}", value),
+            Errors::PushTypeError(value) => write!(f, "argument to 'push' must be array, got {}", value)
         }
     }
 }
