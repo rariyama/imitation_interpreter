@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+use std::collections::BTreeMap;
 use super::token::{Token, TokenKind};
 use super::lexer;
 use super::errors::{Errors};
@@ -112,6 +114,7 @@ impl<'a>  Parser<'a>  {
             TokenKind::FALSE => Expression::Bool(false),
             TokenKind::IF =>   self.parse_if_expression()?,
             TokenKind::LPAREN => self.parse_grouped_expression()?,
+            TokenKind::LBRACE => self.parse_hash_literal()?,
             TokenKind::LBRACKET => self.parse_array_literal()?,
             TokenKind::FUNCTION => self.parse_function_expression()?,
             TokenKind::BANG => self.parse_prefix_expression()?,
@@ -180,6 +183,29 @@ impl<'a>  Parser<'a>  {
 
     fn parse_integer(&mut self) -> Result<i32, Errors> {
         return Ok(self.current_token.literal.parse::<i32>().unwrap())
+    }
+    fn parse_hash_literal(&mut self) -> Result<Expression, Errors> {
+        let mut pairs = BTreeMap::new();
+
+        while !self.is_next_token(TokenKind::RBRACE) {
+            self.next_token();
+            let mut key = self.parse_expression(Precedence::LOWEST)?;
+            if !self.expect_next_token(TokenKind::COLON) {
+                return Ok(Expression::Null)
+            }
+            self.next_token();
+            let mut value = self.parse_expression(Precedence::LOWEST)?;
+            // the values inside btree_map is alphabetically ordered.
+            pairs.insert(Box::new(key), Box::new(value));
+            if !self.is_next_token(TokenKind::RBRACE) && !self.expect_next_token(TokenKind::COMMA) {
+                return Ok(Expression::Null)
+            }
+        }
+        if !self.expect_next_token(TokenKind::RBRACE) {
+            return Ok(Expression::Null)
+        }
+
+        return Ok(Expression::Hashmap(pairs))
     }
 
     fn parse_array_literal(&mut self) -> Result<Expression, Errors> {
@@ -625,4 +651,31 @@ mod testing {
                 let statements = format!("{}", program.statements[0]);
                 assert_eq!("my_array[1 + 1]", statements);
                 }
+            #[test]
+            fn test_parse_hash_literal_string_keys() {
+                let input = "{\"a\": 4, \"b\": 1, \"c\": 3, \"d\": 2}";
+                let lexer = Lexer::new(&input);
+                let mut parser = Parser::new(lexer);
+                let program = parser.parse_program().unwrap();
+                let statements = format!("{}", program.statements[0]);
+                assert_eq!("{a: 4, b: 1, c: 3, d: 2}", statements);
+                }
+            #[test]
+            fn test_parse_empty_hash_literal() {
+                let input = "{}";
+                let lexer = Lexer::new(&input);
+                let mut parser = Parser::new(lexer);
+                let program = parser.parse_program().unwrap();
+                let statements = format!("{}", program.statements[0]);
+                assert_eq!("{}", statements);
+                }
+            #[test]
+            fn test_parse_hash_literal_with_expressions() {
+                let input = "{\"one\": 0 + 1, \"two\": 10-8, \"three\": 15 / 5}";
+                let lexer = Lexer::new(&input);
+                let mut parser = Parser::new(lexer);
+                let program = parser.parse_program().unwrap();
+                let statements = format!("{}", program.statements[0]);
+                assert_eq!("{one: 0 + 1, three: 15 / 5, two: 10 - 8}", statements);
+                    }
             }

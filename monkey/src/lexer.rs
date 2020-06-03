@@ -162,6 +162,9 @@ impl<'a>  Lexer<'a>  {
             b']' => {
                 token = Self::new_token(TokenKind::RBRACKET, self.ch);
             }
+            b':' => {
+                token = Self::new_token(TokenKind::COLON, self.ch);
+            }
             b'"' => {
                 token = Token {
                 token_type: TokenKind::STRING,
@@ -228,7 +231,7 @@ if (5 < 10) {
 "foo bar"
 "Hello world;"
 [1, 2];
-x[0]+x[1];
+{"foo": "bar"}
 "#;
         let tests = vec![
                (TokenKind::LET, String::from("let")),
@@ -313,6 +316,11 @@ x[0]+x[1];
                (TokenKind::INT, String::from("2")),
                (TokenKind::RBRACKET, String::from("]")),
                (TokenKind::SEMICOLON, String::from(";")),
+               (TokenKind::LBRACE, String::from("{")),
+               (TokenKind::STRING, String::from("foo")),
+               (TokenKind::COLON, String::from(":")),
+               (TokenKind::STRING, String::from("bar")),
+               (TokenKind::RBRACE, String::from("}")),
                (TokenKind::EOF, String::from("")),
                ];
 

@@ -1,5 +1,6 @@
 use std::fmt;
-
+use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 #[derive(Debug,PartialEq)]
 pub struct Program {
@@ -14,7 +15,7 @@ impl fmt::Display for Program {
     }
 }
 
-#[derive(Debug,PartialEq, Clone)]
+#[derive(Debug,PartialEq, Clone, Eq, Hash, Ord, PartialOrd)]
 pub enum Statement {
     LetStatement{identifier: Expression,
                  value: Expression},
@@ -44,13 +45,14 @@ impl fmt::Display for Statement {
                 }
             }
 
-#[derive(Debug,PartialEq, Clone)]
+#[derive(Debug,PartialEq, Clone, Eq, Hash, Ord, PartialOrd)]
 pub enum Expression {
     Identifier(String),
     String(String),
     Integer(i32),
     LParen(String),
     Array(Vec<Expression>),
+    Hashmap(BTreeMap<Box<Expression>, Box<Expression>>),
     Bool(bool),
     IndexExpression{left: Box<Expression>,
                     right: Box<Expression>},
@@ -102,10 +104,16 @@ impl fmt::Display for Expression {
                                                                 ),
             Expression::Array(value) => write!(f, "[{}]", value.iter().map(|expression| format!("{}", &expression)).collect::<Vec<_>>().join(", ")),
             Expression::IndexExpression{left, right} => write!(f, "{}[{}]",left, right),
+            Expression::Hashmap(tree) => {
+                match tree {
+                    key => write!(f, "{{{}}}", tree.iter().map(|(key, value)| format!("{}: {}", key, value)).collect::<Vec<_>>().join(", ")),
+                    _ =>  unreachable!()}
+                },
             Null => write!(f, "null")
         }
     }
 }
+
 
 #[derive(Debug, PartialEq, PartialOrd)]
 pub enum Precedence {

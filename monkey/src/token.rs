@@ -46,6 +46,8 @@ pub enum TokenKind {
 
      LOWEST,
 
+     COLON,
+
      DEFAULT,
 }
 
