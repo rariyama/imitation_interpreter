@@ -1,13 +1,9 @@
 use std::fmt;
 
-
 use super::token::{Token};
-use super::parser;
-use super::lexer;
-use super::evaluator;
 use super::object::{Object};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Eq, Ord, PartialOrd)]
 pub enum Errors {
     TokenInvalid(Token),
     InvalidOperator(String),

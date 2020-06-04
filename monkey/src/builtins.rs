@@ -1,9 +1,9 @@
 use super::object::{Object};
 use super::errors::{Errors};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
-pub fn new() -> HashMap<String, Object> {
-    let mut builtins = HashMap::new();
+pub fn new() -> BTreeMap<String, Object> {
+    let mut builtins = BTreeMap::new();
     builtins.insert(String::from("len"), Object::Builtin{func: len});
     builtins.insert(String::from("first"), Object::Builtin{func: first});
     builtins.insert(String::from("last"), Object::Builtin{func: last});

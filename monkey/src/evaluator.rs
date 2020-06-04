@@ -1,26 +1,26 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use crate::ast;
-use super::object::{Object};
+use super::object::{Object, HashKey, HashPair};
 use super::errors::{Errors};
 use super::ast::{Expression};
 use super::builtins;
 
-#[derive(Debug,PartialEq, Clone)]
+#[derive(Debug,PartialEq, Clone, Eq, Ord, PartialOrd)]
 pub struct Environment {
-    store: HashMap<String, Object>,
+    store: BTreeMap<String, Object>,
     outer: Option<Box<Environment>>,
-    builtin: HashMap<String, Object>
+    builtin: BTreeMap<String, Object>
 }
 
 impl Environment {
     pub fn new() -> Environment{
-        let env = HashMap::new();
+        let env = BTreeMap::new();
         let builtins = builtins::new();
         return Environment{store: env, outer: None, builtin: builtins}
     }
 
     pub fn new_outer(self) -> Environment {
-        return Environment{store: HashMap::new(), outer: Some(Box::new(self.clone())), builtin: builtins::new()}
+        return Environment{store: BTreeMap::new(), outer: Some(Box::new(self.clone())), builtin: builtins::new()}
     }
 
     pub fn get(& self, name: &str) -> Option<Object> {
@@ -120,7 +120,20 @@ impl Environment {
                                                         let array = self.evaluate_expression(left)?;
                                                         let index = self.evaluate_expression(right)?;
                                                         Ok(evaluate_index_expression(array, index))
-                                                        }
+                                                        },
+            ast::Expression::Hashmap(value) => {
+                let mut pairs = BTreeMap::new();
+                for (key, value) in value {
+                    let mut key = self.evaluate_expression(key)?;
+                    let hash_key = match HashKey::get_hashkey(&key) {
+                        key => key,
+                        _ => HashKey::Null
+                    };
+                    let mut value = self.evaluate_expression(value)?;
+                    pairs.insert(Box::new(hash_key), Box::new(HashPair{key: key.to_owned(), value: value}));
+                }               
+                Ok(Object::Hash(pairs))
+            }
             ast::Expression::PrefixExpression{operator, right_expression} => {
                 let right = self.evaluate_expression(&right_expression);
                 evaluate_prefix_expression(operator, right.unwrap())
@@ -219,6 +232,18 @@ fn evaluate_index_expression(left: Object, index: Object) -> Object {
                 Object::Null
             }
         },
+        Object::Hash(left) => {
+            let hash_key = match HashKey::get_hashkey(&index) {
+                key => key,
+                _ => HashKey::Null
+            };
+            if let Some(hash_pair) = left.get(&hash_key) {
+                return hash_pair.value.clone()
+            } else {
+                return Object::Null
+            }
+            left[&hash_key].value.clone()
+        }
         _ => Object::Null
     }
 }
@@ -399,10 +424,10 @@ mod testing {
     fn test_if_else_expression() {
         let tests = vec![
                         ("if (true) {10}", "10"),
-                        ("if (false) {10}", "null"),
+                        ("if (false) {10}", ""),
                         ("if (1) {10}", "10"),
                         ("if (1 < 2) { 10 }", "10"),
-                        ("if (1 > 2) {10}", "null"),
+                        ("if (1 > 2) {10}", ""),
                         ("if (1 > 2) {10} else {20}", "20"),
                         ("if (1 < 2) {10} else {20}", "10"),
                         ];
@@ -420,7 +445,7 @@ mod testing {
                         ("return 10; 9;", "10"),
                         ("return 2 * 5; 9;", "10"),
                         ("9; return 2 * 5;", "10"),
-                        ("if (1 > 2) {10}", "null"),
+                        ("if (1 > 2) {10}", ""),
                         ("if (10 > 1){
                              if (10 > 1){
                                 return 10;
@@ -557,6 +582,41 @@ mod testing {
             ("let my_array = [1, 2, 3]; let i = my_array[2]", "3"),
             ("let my_array = [1, 2, 3];my_array[0] + my_array[1]", "3"),
             ("let my_array = [1, 2, 3]; let i = my_array[0]; my_array[i]", "2"),
+            ];
+        for test in tests.iter() {
+            let evaluated = test_evaluate(test.0);
+            let return_value = format!("{}", evaluated);
+            assert_eq!(return_value, test.1);
+        }
+    }
+
+    #[test]
+    fn test_hash_literals() {
+        let tests = vec![
+            ("{\"one\": 10-9}", "{one: 1}"),
+            ("{\"two\": 1 + 1}", "{two: 2}"),
+            ("{\"thr\"+\"ee\":6 / 2}", "{three: 3}"),
+            ("{4: 4}", "{4: 4}"),
+            ("{true: 5}", "{true: 5}"),
+            ("{false: 6}", "{false: 6}"),
+            ];
+        for test in tests.iter() {
+            let evaluated = test_evaluate(test.0);
+            let return_value = format!("{}", evaluated);
+            assert_eq!(return_value, test.1);
+        }
+    }
+
+    #[test]
+    fn test_hash_index_expression() {
+        let tests = vec![
+            ("{\"foo\": 5}[\"foo\"]", "5"),
+            ("{\"foo\": 10}[\"bar\"]", ""),
+            ("let key = \"foo\"; {\"foo\": 5}[key]", "5"),
+            ("{}[\"foo\"]", ""),
+            ("{5: 5}[5]", "5"),
+            ("{true: 5}[true]", "5"),
+            ("{false: 5}[false]", "5"),
             ];
         for test in tests.iter() {
             let evaluated = test_evaluate(test.0);

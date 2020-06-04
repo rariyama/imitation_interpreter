@@ -1,10 +1,11 @@
 use std::fmt;
+use std::collections::BTreeMap;
 
 use super::evaluator::{Environment};
 use super::ast::{Expression, Statement};
 use super::errors::{Errors};
 
-#[derive(Debug,PartialEq, Clone)]
+#[derive(Debug,PartialEq, Clone, Eq, Ord, PartialOrd)]
 pub enum Object {
     Identifier(String),
     String(String),
@@ -13,6 +14,7 @@ pub enum Object {
     Return(Box<Object>),
     Let(Box<Object>),
     Array(Vec<Object>),
+    Hash(BTreeMap<Box<HashKey>, Box<HashPair>>),
     Function{params: Vec<Expression>,
              body: Statement,
              env: Environment
@@ -34,6 +36,11 @@ impl fmt::Display for Object {
            Object::Boolean(value) => write!(f, "{}", value),
            Object::Return(value) => write!(f, "{}", value),
            Object::Let(value) => write!(f, "{}", value),
+           Object::Hash(tree) => {
+            match tree {
+                key => write!(f, "{{{}}}", tree.iter().map(|(key, value)| format!("{}: {}", key, value)).collect::<Vec<_>>().join(", ")),
+                _ =>  unreachable!()}
+            },
            Object::Array(value) => write!(f, "[{}]", value.iter().map(|expression| format!("{}", &expression)).collect::<Vec<_>>().join(", ")),
            Object::Function{params, body, env} => write!(f, "{:?} {} {:?}", params, body, env),
            Object::Builtin{func: _} => write!(f, "builtin functions"),
@@ -44,78 +51,45 @@ impl fmt::Display for Object {
     }
 }
 
-pub enum ObjectType {
-    INTEGER_OBJ,
-    BOOLEAN_OBJ,
-    NULL_OBJ,
-    RETURN_VALUE_OBJ,
-    ILLEGAL
+#[derive(Debug,PartialEq, Clone, Eq, Ord, PartialOrd)]
+pub struct HashPair {
+    pub key: Object,
+    pub value: Object,
 }
 
-pub fn get_object_type(object_type: &str) -> ObjectType {
-    match object_type {
-        "INTEGER" => ObjectType::INTEGER_OBJ,
-        "BOOLEAN" => ObjectType::BOOLEAN_OBJ,
-        "NULL" => ObjectType::NULL_OBJ,
-        _ => ObjectType::ILLEGAL
-    }
-}
-
-#[derive(Debug,PartialEq)]
-pub struct Integer {
-    value: i32
-}
-
-impl fmt::Display for Integer {
+impl fmt::Display for HashPair {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Ok(write!(f, "{}", self.value))?
+        write!(f, "{}", self.value)
     }
 }
 
-impl Integer {
-    pub fn inspect(&mut self) -> i32 {
-        self.value
-    }
-    pub fn fetch_type(&mut self) -> ObjectType {
-        ObjectType::INTEGER_OBJ
-    }
+#[derive(Debug,PartialEq, Clone, Eq, Ord, PartialOrd)]
+pub enum HashKey {
+    Integer(i32),
+    String(String),
+    Boolean(bool),
+    Null
 }
 
-#[derive(Debug,PartialEq)]
-pub struct Boolean {
-    value: bool
-}
-
-impl fmt::Display for Boolean {
+impl fmt::Display for HashKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Ok(write!(f, "{}", self.value))?
+       match self {
+           HashKey::Integer(value) => write!(f, "{}", value),
+           HashKey::String(value) => write!(f, "{}", value),
+           HashKey::Boolean(value) => write!(f, "{}", value),
+           HashKey::Null => write!(f, "null"),
+       }
     }
 }
 
-impl Boolean {
-    pub fn inspect(&mut self) -> bool {
-        self.value
-    }
-    pub fn fetch_type(&mut self) -> ObjectType {
-        ObjectType::BOOLEAN_OBJ
-    }
-}
-
-#[derive(Debug,PartialEq)]
-pub struct Null {
-}
-
-impl fmt::Display for Null {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Ok(write!(f, "null"))?
+impl HashKey {
+    pub fn get_hashkey(key: &Object) -> Self {
+        match key {
+            Object::Integer(key) => HashKey::Integer(*key),
+            Object::String(key) => HashKey::String(key.clone()),
+            Object::Boolean(key) => HashKey::Boolean(*key),
+            _ => HashKey::Null
+        }
     }
 }
 
-impl Null {
-    pub fn inspect(&mut self) -> String {
-        "null".to_string()
-    }
-    pub fn fetch_type(&mut self) -> ObjectType {
-        ObjectType::NULL_OBJ
-    }
-}
