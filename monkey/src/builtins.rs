@@ -9,6 +9,7 @@ pub fn new() -> BTreeMap<String, Object> {
     builtins.insert(String::from("last"), Object::Builtin{func: last});
     builtins.insert(String::from("rest"), Object::Builtin{func: rest}); 
     builtins.insert(String::from("push"), Object::Builtin{func: push}); 
+    builtins.insert(String::from("print"), Object::Builtin{func: print});
     builtins
 }
 
@@ -73,4 +74,11 @@ fn push(args: Vec<Object>) -> Object {
         },
         _ =>  Object::Error(Errors::PushTypeError(Box::new(args[0].clone())))
     }
+}
+
+fn print(args: Vec<Object>) -> Object {
+    for arg in args.iter() {
+        eprint!("{}", arg);
+    }
+    Object::Null
 }
