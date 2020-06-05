@@ -93,9 +93,8 @@ impl<'a>  Lexer<'a>  {
         let token;
         match self.ch {
             b'=' => {
+                // if peek_char is '=', the literal will be '==',
                 if self.peek_char() == b'='{
-                    // if peek_char is '=', the literal should be '==',
-                    // so read_char and register the two letters.
                     let curent_position = self.position;
                     self.read_char();
                     token =  Token {//u8は一文字なので直接tokenに入れる。
@@ -111,8 +110,7 @@ impl<'a>  Lexer<'a>  {
             }
             b'!' => {
                 if self.peek_char() == b'='{
-                    // if peek_char is '=', the literal should be '!=',
-                    // so read_char and register the two letters.
+                    // if peek_char is '=', the literal will be '!=',
                     let curent_position = self.position;
                     self.read_char();
                     token =  Token {
@@ -178,13 +176,15 @@ impl<'a>  Lexer<'a>  {
                 };
             }
             _   => {
+                    // if token is identifier or integer, read_char() is not implemented,
+                    // because read_char() is implemented in read_identifier().
                     if Self::is_letter(&self.ch) {
                         let ident = self.read_identifier();
                         let ident_token = get_keyword(&ident);
                             token =  Token {
                             token_type: ident_token,
                             literal: ident
-                     };//ここでreturnしないと文字が一つ読み飛ばされる。
+                            };
                      return token
                     } else if Self::is_digit(&self.ch) {
                         token =  Token {

@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::collections::BTreeMap;
 use super::token::{Token, TokenKind};
 use super::lexer;
@@ -15,7 +14,6 @@ pub struct Parser<'a>  {
 
 impl<'a>  Parser<'a>  {
     pub fn new(l: lexer::Lexer<'a>) -> Self {
-        // Goだと初期化時に省略するが、rustではできないためはじめにやる。
         let mut p = Parser{
             lexer: l,
             current_token: Token{token_type: TokenKind::DEFAULT, literal: "default".to_string() },
@@ -34,13 +32,12 @@ impl<'a>  Parser<'a>  {
     pub fn parse_program(&mut self) -> Result<Program, Errors> {
         let mut statements: Vec<Statement> = vec![];
 
-        // eofになるまでstatementsを配列に入れる。
+        // read token until it reaches at the end of sentence.
         while !self.is_current_token(TokenKind::EOF){
             let statement = self.parse_statement()?;
             statements.push(statement);
             self.next_token();
         };
-        // 読んだ式をprogramに入れて返す。
         Ok(Program {statements: statements})
     }
 
@@ -59,18 +56,19 @@ impl<'a>  Parser<'a>  {
     }
 
     fn parse_let_statement(&mut self) -> Result<Statement, Errors> {
-        // current token is let, so next token should be identifier.
+        // Since current token is let, next_token() is implemented in order to read identifier next to 'let'.
         self.next_token();
-        // current token should be identifier and next token is '=';
+
+        // If current token is identifier, next token must be '==' or '!='
         if !self.is_current_token(TokenKind::IDENT) || self.expect_next_token(TokenKind::IDENT){
             return Err(Errors::TokenInvalid(self.next_token.clone()))
         }
         let identifier = Expression::Identifier(self.current_token.literal.clone());
-        // if assign isn't next to identifier, return error.
+        // If there isn't assign next to identifier, return error.
         if !self.expect_next_token(TokenKind::ASSIGN) {
             return Err(Errors::TokenInvalid(self.next_token.clone()))
         }
-        // skip a symbol.
+        // skip a assign token
         self.next_token();
 
         // get right side value.
@@ -86,10 +84,11 @@ impl<'a>  Parser<'a>  {
     }
 
     fn parse_return_statement(&mut self) -> Result<Statement, Errors> {
+        // skip return value and then read value next to return.
         self.next_token();
         let return_value = self.parse_expression(Precedence::LOWEST)?;
 
-        // セミコロンまでの読み飛ばしをしてからstatementを定義して返す。
+        // read token until it reaches at the end of sentence.
         while !self.is_current_token(TokenKind::SEMICOLON) {
             self.next_token()
         }
@@ -122,10 +121,10 @@ impl<'a>  Parser<'a>  {
             _ => return Err(Errors::TokenInvalid(self.current_token.clone()))
         };
         while !self.is_next_token(TokenKind::SEMICOLON) && precedence < self.next_precedence() {
+            //operator must be set in current position,
+            //so token must be read once forward.
             match self.next_token.token_type {
                 TokenKind::PLUS => {
-                    //since operator must be set in current position,
-                    //so token must be read once forward.
                     self.next_token();
                     exp =  self.parse_infix_expression(exp)?;
                 },
@@ -189,12 +188,12 @@ impl<'a>  Parser<'a>  {
 
         while !self.is_next_token(TokenKind::RBRACE) {
             self.next_token();
-            let mut key = self.parse_expression(Precedence::LOWEST)?;
+            let key = self.parse_expression(Precedence::LOWEST)?;
             if !self.expect_next_token(TokenKind::COLON) {
                 return Ok(Expression::Null)
             }
             self.next_token();
-            let mut value = self.parse_expression(Precedence::LOWEST)?;
+            let value = self.parse_expression(Precedence::LOWEST)?;
             // the values inside btree_map is alphabetically ordered.
             pairs.insert(Box::new(key), Box::new(value));
             if !self.is_next_token(TokenKind::RBRACE) && !self.expect_next_token(TokenKind::COMMA) {
@@ -222,7 +221,6 @@ impl<'a>  Parser<'a>  {
             self.next_token();
             return Ok(list)
         } else {
-
             // skip left bracket;
             self.next_token();
             list.push(self.parse_expression(Precedence::LOWEST)?);
@@ -247,7 +245,7 @@ impl<'a>  Parser<'a>  {
         if !self.expect_next_token(TokenKind::RBRACKET) {
             return Ok(Expression::Null)
         }
-        Ok(Expression::IndexExpression{left: Box::new(left), right: Box::new(index)})
+        Ok(Expression::IndexExpression{array: Box::new(left), subscript: Box::new(index)})
     }
 
     fn parse_grouped_expression(&mut self) -> Result<Expression, Errors> {
@@ -262,22 +260,19 @@ impl<'a>  Parser<'a>  {
 
     fn parse_if_expression(&mut self) ->  Result<Expression, Errors> {
         if !self.is_next_token(TokenKind::LPAREN) {
-            println!("TokenKind should be LPAREN but actually is {:?}",self.next_token.token_type)
+            return Ok(Expression::Null)
         }
         self.next_token();
         let condition = self.parse_expression(Precedence::LOWEST);
-        if !self.expect_next_token(TokenKind::RPAREN) {
-        }
-        if !self.expect_next_token(TokenKind::LBRACE) {
-        }
-        let alt = self.alternative()?;
-        let alt_some = alt;
 
+        if !self.expect_next_token(TokenKind::LBRACE) {
+            return Ok(Expression::Null)
+            }
         let expression = Expression::IfExpression{
                             condition: Box::new(condition?),
                             consequence: Box::new(self.parse_block_statements(TokenKind::LBRACE)?),
                             alternative: self.alternative()?,
-        };
+                                                  };
         Ok(expression)
     }
 
@@ -347,8 +342,10 @@ impl<'a>  Parser<'a>  {
 
     fn parse_call_arguments(&mut self, func: Expression) -> Result<Expression, Errors> {
         let mut arguments = vec![];
+
         if self.is_next_token(TokenKind::RPAREN) {
             self.next_token();
+            return Ok(Expression::CallExpression{function: Box::new(func), body: arguments})
         } else {
         self.next_token();
         arguments.push(self.parse_expression(Precedence::LOWEST)?);
@@ -358,8 +355,8 @@ impl<'a>  Parser<'a>  {
             arguments.push(self.parse_expression(Precedence::LOWEST)?);
         }
         if !self.expect_next_token(TokenKind::RPAREN) {
-            panic!()
-        }
+            return Ok(Expression::Null)
+                }
             }
         Ok(Expression::CallExpression{function: Box::new(func), body: arguments})
     }
@@ -387,9 +384,8 @@ impl<'a>  Parser<'a>  {
             TokenKind::GT => ">".to_string(),
             _ => {panic!()}
         };
-        // the current token should be read in parse_expression().
-        // so token must be read in order that the expression next operator
-        // is set to current_token
+        // current token will be read in parse_expression().
+        // next token must be implemented in order that next operator is set to current_token
         let precedence = self.current_precedence();
         self.next_token();
         let right = self.parse_expression(precedence)?;
@@ -431,10 +427,6 @@ impl<'a>  Parser<'a>  {
 #[cfg(test)]// test runs only when execute cargo run
 mod testing {
     use crate::lexer::Lexer;
-    use crate::token::TokenKind;
-    use crate::ast::Statement::Block;
-    use crate::ast::Statement;
-    use crate::ast::Expression;
     use crate::parser::Parser;
     use std::str::FromStr;
 
@@ -601,6 +593,7 @@ mod testing {
                 let mut parser = Parser::new(lexer);
                 let program = parser.parse_program().unwrap();
                 let statements = format!("{}", program.statements[0]);
+                println!("{:?}", statements);
                 assert_eq!(input, statements);
                 }
 

@@ -1,5 +1,4 @@
 use std::fmt;
-use std::collections::HashMap;
 use std::collections::BTreeMap;
 
 #[derive(Debug,PartialEq)]
@@ -54,8 +53,8 @@ pub enum Expression {
     Array(Vec<Expression>),
     Hashmap(BTreeMap<Box<Expression>, Box<Expression>>),
     Bool(bool),
-    IndexExpression{left: Box<Expression>,
-                    right: Box<Expression>},
+    IndexExpression{array: Box<Expression>,
+                    subscript: Box<Expression>},
     PrefixExpression{operator: String,
                      right_expression: Box<Expression>
                      },
@@ -103,10 +102,10 @@ impl fmt::Display for Expression {
                                                                 body.iter().map(|expression| format!("{}", &expression)).collect::<Vec<_>>().join(", "),
                                                                 ),
             Expression::Array(value) => write!(f, "[{}]", value.iter().map(|expression| format!("{}", &expression)).collect::<Vec<_>>().join(", ")),
-            Expression::IndexExpression{left, right} => write!(f, "{}[{}]",left, right),
+            Expression::IndexExpression{array, subscript} => write!(f, "{}[{}]",array, subscript),
             Expression::Hashmap(tree) => {
                 match tree {
-                    key => write!(f, "{{{}}}", tree.iter().map(|(key, value)| format!("{}: {}", key, value)).collect::<Vec<_>>().join(", ")),
+                    tree => write!(f, "{{{}}}", tree.iter().map(|(key, value)| format!("{}: {}", key, value)).collect::<Vec<_>>().join(", ")),
                     _ =>  unreachable!()}
                 },
             Null => write!(f, "null")
@@ -123,6 +122,6 @@ pub enum Precedence {
     SUM,          // +
     PRODUCT,      // *
     PREFIX,       // -X or !X
-    CALL,          // my_cunction(x){}
-    LBRACKET,
+    CALL,         // my_cunction(x){}
+    LBRACKET,     // []
 }

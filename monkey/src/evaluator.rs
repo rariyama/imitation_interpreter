@@ -1,4 +1,6 @@
+use std::fmt;
 use std::collections::BTreeMap;
+
 use crate::ast;
 use super::object::{Object, HashKey, HashPair};
 use super::errors::{Errors};
@@ -44,7 +46,7 @@ impl Environment {
         // evaluate sentence per semicolon.
         for statement in program.statements.iter() {
             result = self.evaluate_statement(statement)?;
-            // if statement contains 'return', process should be broken in order to return value.
+            // if statement contains 'return', process should be broken and return value.
             if let Object::Return(value) = result {
                 return Ok(*value)
             }
@@ -116,9 +118,9 @@ impl Environment {
                 let array = self.evaluate_arguments(value.to_vec())?;
                 Ok(Object::Array(array))
             },
-            ast::Expression::IndexExpression{left, right} => {
-                                                        let array = self.evaluate_expression(left)?;
-                                                        let index = self.evaluate_expression(right)?;
+            ast::Expression::IndexExpression{array, subscript} => {
+                                                        let array = self.evaluate_expression(array)?;
+                                                        let index = self.evaluate_expression(subscript)?;
                                                         Ok(evaluate_index_expression(array, index))
                                                         },
             ast::Expression::Hashmap(value) => {

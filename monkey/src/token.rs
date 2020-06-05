@@ -41,8 +41,8 @@ pub enum TokenKind {
 
      STRING,
 
-     LBRACKET,
-     RBRACKET,
+     LBRACKET,    // [
+     RBRACKET,    // ]
 
      LOWEST,
 

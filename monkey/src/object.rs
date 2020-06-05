@@ -42,7 +42,10 @@ impl fmt::Display for Object {
                 _ =>  unreachable!()}
             },
            Object::Array(value) => write!(f, "[{}]", value.iter().map(|expression| format!("{}", &expression)).collect::<Vec<_>>().join(", ")),
-           Object::Function{params, body, env} => write!(f, "{:?} {} {:?}", params, body, env),
+           Object::Function{params, body, env} => write!(f, "{} {} {:?}", params.iter().map(|expression| format!("{}", &expression)).collect::<Vec<_>>().join(", ")
+                                                                        , body
+                                                                        , env
+                                                        ),
            Object::Builtin{func: _} => write!(f, "builtin functions"),
            Object::Null => write!(f, ""),
            Object::Default => write!(f, "default"),
