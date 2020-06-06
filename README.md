@@ -8,15 +8,15 @@ This interpreter is working for Monkey programming language, which is created fo
 ## How to use
 ### Local Environment
 ```
-git clone git@github.com:rariyama/imitation_interpreter.git
-cd imitation_interpreter
-cargo run
+$ git clone git@github.com:rariyama/imitation_interpreter.git
+$ cd imitation_interpreter
+$ cargo run
 ```
 
 ### Use Dockerfile
 ```
-git clone git@github.com:rariyama/imitation_interpreter.git
-docker build -t monkey_repl ./imitation_interpreter
-docker run --rm -it -v $PWD/imitation_interpreter:/monkey -w /monkey monkey_repl cargo run
+$ git clone git@github.com:rariyama/imitation_interpreter.git
+$ docker build -t monkey_repl ./imitation_interpreter
+$ docker run --rm -e USER=$USER -it -v $PWD/imitation_interpreter:/monkey -w /monkey monkey_repl cargo run
 ```
 
