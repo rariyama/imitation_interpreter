@@ -1,5 +1,5 @@
 /target
 .DS_Store
-/monkey/target/
-/monkey/Cargo.lock
-/monkey/Cargo.toml
+/target/
+/Cargo.lock
+/Cargo.toml
