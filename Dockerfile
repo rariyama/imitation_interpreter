@@ -24,3 +24,9 @@ RUN set -eux; \
     rustup --version; \
     cargo --version; \
     rustc --version;
+RUN apt update && apt install -y gcc make git binutils libc6-dev gdb sudo 
+RUN adduser --disabled-password --gecos '' user
+RUN echo 'user ALL=(root) NOPASSWD:ALL' > /etc/sudoers.d/user
+USER user
+RUN curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
+RUN sudo apt install -y nodejs
