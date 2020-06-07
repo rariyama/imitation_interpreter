@@ -1,3 +1,8 @@
+extern crate rustyline;
+
+use rustyline::error::ReadlineError;
+use rustyline::Editor;
+
 use crate::{lexer, parser, ast, errors, evaluator, object};
 use std::io;
 use std::io::prelude::*;
@@ -7,46 +12,47 @@ const PROMPT: &str = ">> ";
 
 
 pub fn start() {
+    let mut rl = Editor::<()>::new();
     // if environment is defined outside loop,
     // initialize it per iterator, and can't contain variables.
     let mut environment = evaluator::Environment::new();
     loop {
-        // display prompt symbol
-        io::stdout().flush().unwrap();
-        eprint!("{}", PROMPT);
+        let readline = rl.readline(">> ");
+        match readline {
+            Ok(line) => {
+                rl.add_history_entry(&line);
+                if line == "" {
+                    continue;
+                }
+                // the command to exit
+                if line == "exit()" {
+                    println!("Bye!");
+                    break;
+                }
 
-        //read and parse input data 
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).unwrap();
-        let lexer = lexer::Lexer::new(&input);
-        
-        // the command to exit
-        if input == "exit()\n" {
-            println!("Bye!");
+                else if line == "exit" {
+                    println!("if you would like to exit, please use exit(), ctrl-c, or ctrl-d");
+                    continue;
+                }
+
+                let lexer = lexer::Lexer::new(&line);
+                let mut parser = parser::Parser::new(lexer);
+                let program = parser.parse_program().unwrap();
+                let evaluated = environment.evaluate(&program);
+                println!("{}", evaluated.unwrap());
+            },
+            Err(ReadlineError::Interrupted) => {
+                println!("Bye!");
+                break
+            },
+        Err(ReadlineError::Eof) => {
+            println!("ctrl-d");
             break
+        },
+        Err(err) => {
+            println!("error: {:?}", err);
+            break
+           }
         }
-        else if input == "exit\n" {
-            println!("if you would like to exit, please use exit()");
-            continue
-        }
-        
-        let mut parser = parser::Parser::new(lexer);
-        let program = parser.parse_program().unwrap();
-        let evaluated = environment.evaluate(&program);
-
-        // if input is invalid, display error message and retry.
-        if let Err(_error) = &evaluated {
-            println!("invalid syntax");
-            println!("{:?}", evaluated);
-            continue;
-        }
-
-        // if input is null, display nothing and retry.
-        if input.len() == 1 {
-            continue;
-        } else {
-            // if correctly input, display parsed result.
-            println!("{}", evaluated.unwrap());
-            }
-        }
-        }
+    }
+}
