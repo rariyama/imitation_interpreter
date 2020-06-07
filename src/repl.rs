@@ -4,12 +4,6 @@ use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
 use crate::{lexer, parser, ast, errors, evaluator, object};
-use std::io;
-use std::io::prelude::*;
-
-
-const PROMPT: &str = ">> ";
-
 
 pub fn start() {
     let mut rl = Editor::<()>::new();
@@ -42,7 +36,7 @@ pub fn start() {
                 println!("{}", evaluated.unwrap());
             },
             Err(ReadlineError::Interrupted) => {
-                println!("Bye!");
+                println!("ctrl-c");
                 break
             },
         Err(ReadlineError::Eof) => {
