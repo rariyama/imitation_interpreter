@@ -66,11 +66,11 @@ let x = 5;
 let y = 10;
 if (x < y) { print("y is larger than x") } else { print("y is smaller than x")}
 ```
-#### map
+#### Map
 This supports key value map literal. you can declare key-value and slice it.  
 This is alphabetically ordered.
 ```
-let my_profile = {"first_name": "ryo", "last_name": "ariyama", "age": 29, "sex": "male"}
+let my_profile = {"first_name": "ryo", "last_name": "ariyama", "sex": "male"}
 print(my_profile["first_name"])
 ```
 #### Array
