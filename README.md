@@ -53,12 +53,6 @@ you can bind functions with variables.
 let add = fn(x, y){x + y;};
 let result = add (1, 2);
 ```
-#### Function definition
-you can bind functions with variables.
-```
-let add = fn(x, y){x + y;};
-let result = add (1, 2);
-```
 #### IF Statement
 you can write conditional sentences by using `if` or `else`, but if you can't use `else if` or `elif`.
 ```
